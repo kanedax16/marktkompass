@@ -697,6 +697,11 @@ function applyData(data,fdata){
     rows=rows.filter(r=>{if(r.grp==="Haushalt")return true;const t=r.product+" "+r.brand+" "+r.description;if(NONFOOD_RX.test(t))return false;return !(/^(Obst|Gemüse|Fleisch|Fisch|Milch & Eier)$/.test(r.grp)&&PROC_RX.test(t))});
     // Bier und Biermix (z. B. Grapefruit Weizen-Mix) sind kein Obst und enthalten Zucker: raus
     rows=rows.filter(r=>!/\bbier\b|bier-|biermix|weizen-mix|radler/i.test(r.product+" "+r.description));
+    // Doppelte Angebote zusammenfassen (z. B. dasselbe Produkt in zwei Prospekten eines Ladens): das am längsten gültige bleibt
+    {const best=new Map();for(const r of rows){const k=[r.retailer,String(r.product).toLowerCase().trim(),String(r.brand).toLowerCase().trim(),r.price,r.unit,r.kind,r.loyalty].join("|");const o=best.get(k);
+      const nowIso=new Date().toISOString(),act=x=>!x.validFrom||String(x.validFrom)<=nowIso;
+      if(!o||(act(r)&&!act(o))||(act(r)===act(o)&&String(r.validTo||"9")>String(o.validTo||"9")))best.set(k,r)}
+     rows=[...best.values()]}
     // Artikelname aus deiner Artikelliste (vom n8n-Workflow gesetzt), sonst die eigene Erkennung
     rows.forEach(r=>r.art=r.artKI||article(r));
     // Apfelschorle ist ein eigener Artikel (bis zum nächsten Lauf noch unter Äpfel einsortiert)
