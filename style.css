@@ -366,3 +366,21 @@ table.bz tr.bx td{color:var(--muted)}
 #bnew:disabled{opacity:.5}
 .bons[hidden]{display:none}
 .pill.bon{background:var(--best-soft);color:var(--best);border:1px solid var(--best)}
+
+/* Vorrat */
+.vorrat h3 small{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+.vbox{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+.vbox.bald{border-color:var(--warn)}
+.vh{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:6px 10px;background:var(--soft);color:var(--muted);cursor:pointer}
+.vbox.bald .vh{background:var(--warn-soft);color:var(--warn);cursor:default}
+.vh small{margin-left:4px}
+.vi{display:flex;align-items:center;gap:10px;padding:7px 10px;border-top:1px solid var(--line)}
+.vh+.vi{border-top:0}
+.vt{flex:1;min-width:0}.vn{font-weight:700;overflow-wrap:anywhere}.vd{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.vi.alt .vd{color:var(--err)}
+.vleer{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:3px 10px;cursor:pointer}
+.vadd{display:flex;gap:6px;max-width:420px}
+.vadd input{flex:1;min-width:0;font:inherit;font-size:16px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);box-sizing:border-box}
+.vadd button{font:inherit;font-weight:700;width:38px;border-radius:8px;border:0;background:var(--fg);color:var(--bg);cursor:pointer}
+.home{color:var(--best);font-weight:600}
+.videa{padding:8px 10px;border-top:1px solid var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.videa small{color:var(--muted)}

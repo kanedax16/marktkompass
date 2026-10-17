@@ -111,6 +111,12 @@
     del:async id=>{const r=await post({t:"bon_del",id});return !!(r&&r.ok)}
   };
 
+  // Vorrat: gemeinsamer Zustand (leer markiert, von Hand ergänzt)
+  window.MK_VORRAT={
+    get:async()=>{const d=await fetchData();if(!d)throw 0;return d.state&&d.state.vorrat?d.state.vorrat.v:null},
+    set:async v=>post({t:"set",name:"vorrat",value:v})
+  };
+
   window.claude={use:async k=>k==="db"?db:k==="user"?user:k==="mcp"?mcp:null};
 
   // Beim Zurückkehren in die App die Liste des anderen nachladen (höchstens alle 30 Sekunden)

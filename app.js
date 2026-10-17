@@ -437,7 +437,7 @@ function renderShop(){
     ${arr.map(e=>{const o=e.best&&e.best.o;return `<label class="li${e.done?" done":""}" data-key="${esc(e.key)}">
       <input type="checkbox" ${e.done?"checked":""}><img class="px" src="${icon(e.art||e.name,e.art?grpOf(e.art):null)}" alt="">
       <span class="lt"><span class="ln"><b>${qtyTxt(e.fam,e.base,e.unit)}</b> ${esc(e.name)}</span>
-      <span class="lo">${o?`${esc(o.product)} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}</span></span>
+      <span class="lo">${o?`${esc(o.product)} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}${homeNote(e.art||e.name)}</span></span>
       ${e.cost!=null?`<span class="lc">${eur(e.cost)}</span>`:""}${e.extra?`<button type="button" class="ibtn" data-act="del" aria-label="${esc(e.name)} entfernen">×</button>`:""}</label>`}).join("")}</div>`}).join("");
   document.getElementById("ltotal").textContent=total?`ca. ${eur(total)} zu den günstigsten Preisen`:"";
 }
@@ -787,9 +787,10 @@ function renderEssen(){
   const nope=[...by.entries()].filter(([,o])=>o.x>o.g).slice(0,8);
   const days=[];for(const m of ms){let d=days.find(x=>x.d===m.datum);if(!d){d={d:m.datum,l:[]};days.push(d)}d.l.push(m)}
   const who=m=>m.rolle===essen.role?"du":"Mitbewohner:in";
-  el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Tragt ein, was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
+  el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Was zu Hause ist, was bald weg muss, und was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
   ${fav.length||nope.length?`<section class="elike">${fav.length?`<div><h3>Gern gegessen</h3><div class="echips">${fav.map(([n,o])=>`<button type="button" class="chip" data-quick="${esc(n)}">${esc(n)}${o.g>1?` <small>${o.g}×</small>`:""}</button>`).join("")}</div></div>`:""}${nope.length?`<div><h3>Kommt nicht so an</h3><div class="echips">${nope.map(([n])=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div>`:""}</section>`:""}
   <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,who(m),m.zutaten].filter(Boolean).join(" · "))}</div></div>${m.urteil?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
+  renderVorrat();
 }
 function openEssen(pre){
   essen.sel={dish:pre||"",urteil:"",mahlzeit:mzNow(),tag:0,foto:""};
@@ -880,3 +881,69 @@ function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();co
     if(ok){bons.list=bons.list.filter(x=>x.id!==id);drawBons();info.textContent=def}else{b.disabled=false}});
 })();
 initBons();
+
+// Vorrat (Web-Version): füllt sich aus den Kassenbons, Gerichte aus dem Tagebuch ziehen ab, "leer" tippen korrigiert.
+// Haltbarkeit ist eine Schätzung je Artikel. Geteilter Zustand (leer markiert, von Hand ergänzt) liegt im Haushalt.
+var vorrat={on:false,st:{gone:{},extra:[]},saving:false};
+const SHELF=[[/salat|rucola|spinat|kresse|sprossen|kräuter|basilikum|petersilie|schnittlauch|koriander|minze/i,4],[/beere|himbeer|erdbeer|heidelbeer|brombeer|kirsch/i,3],
+ [/pilz|champignon|seitling/i,4],[/hack/i,1],[/lachs|fisch|forelle|garnele|dorade|kabeljau|seelachs|muschel|tintenfisch/i,2],[/tiefgek|tk\b|tiefgefr/i,180],
+ [/hähnchen|pute|ente|gans|rind|kalb|lamm|steak|fleisch/i,3],[/milch|joghurt|kefir|skyr|quark|sahne|buttermilch/i,10],[/eier/i,21],[/butter/i,30],
+ [/käse|parmesan|parmigiano|bergkäse|gouda|feta|mozzarella|burrata|brie/i,14],[/kartoffel|zwiebel|knoblauch|schalotte|kürbis|kohl\b|weißkohl|rotkohl/i,30],
+ [/äpfel|apfel|birne|zitrone|orange|clementine|mandarine|grapefruit/i,21],[/banane|avocado|mango|kiwi|tomate|gurke|paprika|zucchini|aubergine|brokkoli|blumenkohl/i,6],
+ [/möhre|karotte|sellerie|lauch|rote bete|fenchel|kohlrabi|rettich|radieschen/i,10],[/brot|brötchen/i,4],
+ [/nuss|nüsse|mandel|cashew|linsen|kichererbsen|bohnen getr|reis|nudel|hafer|mehl|öl\b|olivenöl|essig|zucker|salz|konserve|im glas|dose|schorle|saft/i,180]];
+const GRP_SHELF={"Obst":7,"Gemüse":7,"Fleisch":3,"Fisch":2,"Milch & Eier":10,"Käse":14,"Feinkost":10,"Nüsse & Hülsenfrüchte":180,"Getreide & Flocken":180,"Saaten & Öle":180,"Vorrat":180,"Getränke":60,"Haushalt":365};
+function shelfDays(art,name){const t=(art||"")+" "+(name||"");for(const [rx,d] of SHELF)if(rx.test(t))return d;const g=art&&typeof grpOf==="function"?grpOf(art):null;return GRP_SHELF[g]||14}
+const addDays=(iso,n)=>{const [Y,M,D]=String(iso).split("-").map(Number);const d=new Date(Y,M-1,D+n);return isoDay(Math.round((new Date().setHours(0,0,0,0)-d)/864e5))};
+const dShort=iso=>{const [Y,M,D]=String(iso).split("-");return D+"."+M+"."};
+const normW=s=>String(s||"").toLowerCase().replace(/[^a-zäöüß]+/g," ").trim();
+function stockItems(){
+  const today=isoDay(0),out=[];
+  for(const b of (typeof bons!=="undefined"&&bons.list)||[])b.zeilen.forEach((z,i)=>{if(z.typ!=="ware")return;
+    const key=b.id+"|"+i;out.push({key,art:z.artikel||"",name:z.artikel||z.name,detail:z.name,menge:z.menge,einheit:z.einheit,datum:b.datum,laden:b.laden,bis:addDays(b.datum,shelfDays(z.artikel,z.name))})});
+  for(const x of vorrat.st.extra||[])out.push({key:"x|"+x.id,art:x.art||"",name:x.name,detail:"",datum:x.datum,laden:"",bis:addDays(x.datum,shelfDays(x.art,x.name)),manual:true});
+  // Gegessenes zieht ab: je Mahlzeit und Zutat das älteste passende Stück
+  const used=new Set();
+  const meals=((typeof essen!=="undefined"&&essen.meals)||[]).slice().sort((a,b)=>String(a.datum).localeCompare(String(b.datum)));
+  for(const m of meals){const zs=String(m.zutaten||"").split(",").map(normW).filter(Boolean);
+    for(const z of zs){const it=out.filter(x=>!used.has(x.key)&&x.datum<=m.datum&&(x.art||x.name)).sort((a,b)=>String(a.datum).localeCompare(String(b.datum)))
+      .find(x=>{const a=normW(x.art||x.name);return a&&(a.includes(z)||z.includes(a.replace(/n$|en$|e$/,"")))});if(it)used.add(it.key)}}
+  return out.filter(x=>!used.has(x.key)&&!vorrat.st.gone[x.key]&&addDays(x.bis,7)>=today)
+    .map(x=>({...x,state:x.bis<today?"alt":x.bis<=addDays(today,2)?"bald":"ok"}))
+    .sort((a,b)=>String(a.bis).localeCompare(String(b.bis)));
+}
+function homeNote(n){if(!vorrat.on)return "";const a=normW(n);if(!a)return "";
+  const it=stockItems().find(x=>normW(x.art||x.name)===a);return it?` · <span class="home">zu Hause seit ${esc(dShort(it.datum))}</span>`:""}
+async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[]};render()}catch(e){}}
+async function saveVorrat(){if(!window.MK_VORRAT)return;
+  // Alte Markierungen aufräumen, damit der Zustand klein bleibt
+  const lim=isoDay(90);for(const [k,d] of Object.entries(vorrat.st.gone))if(d<lim)delete vorrat.st.gone[k];
+  vorrat.st.extra=(vorrat.st.extra||[]).filter(x=>x.datum>=lim);
+  try{await window.MK_VORRAT.set(vorrat.st)}catch(e){}}
+// Ideen: eure gern gegessenen Gerichte, die das verbrauchen, was bald weg muss
+function ideas(bald){
+  const fav=new Map();for(const m of (essen.meals||[]))if(m.urteil!=="nein"){const o=fav.get(m.name)||{z:normW(m.zutaten),g:0};if(m.urteil==="gern")o.g++;fav.set(m.name,o)}
+  for(const d of dishes)if(!fav.has(d.name))fav.set(d.name,{z:normW(d.items.map(i=>i.n).join(" ")),g:0});
+  const out=[];for(const [n,o] of fav){const hit=bald.filter(x=>{const a=normW(x.art||x.name).replace(/n$|en$|e$/,"");return a.length>2&&o.z.includes(a)}).map(x=>x.name);
+    if(hit.length)out.push({n,hit,score:hit.length*10+o.g})}
+  out.sort((a,b)=>b.score-a.score);
+  return out.length?`<div class="videa">Idee: ${out.slice(0,3).map(x=>`<button type="button" class="chip" data-quick="${esc(x.n)}">${esc(x.n)}</button> <small>mit ${esc(x.hit.join(", "))}</small>`).join(" ")}</div>`:"";
+}
+function renderVorrat(){
+  if(!vorrat.on)return;const host=document.getElementById("essen");if(!host)return;
+  let el=document.getElementById("vorrat");if(!el){el=document.createElement("section");el.id="vorrat";el.className="vorrat";const head=host.querySelector(".ehead");head.insertAdjacentElement("afterend",el)}
+  const its=stockItems(),bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
+  const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn">${esc(x.name)}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
+  el.innerHTML=`<h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
+  ${!its.length?`<p class="hint">${(bons.list||[]).length?"Alles verbraucht, oder noch nichts eingetragen.":"Fotografiert eure Kassenbons im Reiter Einkaufen, dann füllt sich der Vorrat von selbst."} Was ihr esst, zieht die App ab.</p>`:""}
+  ${bald.length?`<div class="vbox bald"><div class="vh">Bald verbrauchen</div>${bald.map(row).join("")}${ideas(bald)}</div>`:""}
+  ${rest.length?`<details class="vbox"><summary class="vh">Noch da <small>${rest.length}</small></summary>${rest.map(row).join("")}</details>`:""}
+  <form class="vadd" id="vadd"><input id="vnew" list="artlist" placeholder="Etwas ohne Bon ergänzen, z. B. Eier" aria-label="Vorrat ergänzen" autocomplete="off"><button type="submit" aria-label="Hinzufügen">+</button></form>`;
+}
+(function wireVorrat(){
+  const host=document.getElementById("essen");if(!host)return;
+  host.addEventListener("click",e=>{const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);renderVorrat();saveVorrat()});
+  host.addEventListener("submit",e=>{if(e.target.id!=="vadd")return;e.preventDefault();const v=document.getElementById("vnew").value.trim();if(!v)return;
+    const art=typeof artFor==="function"?artFor(v):"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0)});renderVorrat();saveVorrat()});
+})();
+initVorrat();
