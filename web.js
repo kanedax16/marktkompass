@@ -104,6 +104,13 @@
     del:async id=>{const r=await post({t:"essen_del",id});return !!(r&&r.ok)}
   };
 
+  // Kassenbons: beide Links dürfen fotografieren
+  window.MK_BON={
+    get:async()=>{const d=await fetchData();return d?(d.bons||[]):null},
+    add:async foto=>post({t:"bon",foto}),
+    del:async id=>{const r=await post({t:"bon_del",id});return !!(r&&r.ok)}
+  };
+
   window.claude={use:async k=>k==="db"?db:k==="user"?user:k==="mcp"?mcp:null};
 
   // Beim Zurückkehren in die App die Liste des anderen nachladen (höchstens alle 30 Sekunden)

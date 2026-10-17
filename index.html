@@ -76,6 +76,12 @@
       <div id="lgroups"></div>
       <div class="lfoot"><button type="button" id="lcopy">Als Text kopieren</button><button type="button" id="ldone">Erledigte entfernen</button><button type="button" id="lclear">Liste leeren</button></div>
     </section>
+    <section id="bons" class="bons" hidden>
+      <h2>Kassenbons <button type="button" class="sbtn" id="bnew">+ Bon fotografieren</button></h2>
+      <input type="file" id="bfile" accept="image/*" capture="environment" hidden>
+      <p class="hint" id="binfo">Fotografiere den Bon gerade und ganz. Die KI liest Laden, Datum und jede Zeile, daraus entstehen eure echten Preise. Das Foto wird nicht gespeichert.</p>
+      <div id="blist"></div>
+    </section>
   </div>
   <div id="saison" class="saison" hidden></div>
   <div id="prosp" class="prosp" hidden></div>

@@ -342,3 +342,26 @@ body.gast #pshops{pointer-events:none;opacity:.6}
 .eub[aria-pressed="true"].u-nein{background:var(--err);color:#fff}
 @media (max-width:560px){.views{overflow-x:auto;scrollbar-width:none}.views button{flex:1 0 auto;padding:5px 9px}}
 #edlg input#etext{box-sizing:border-box}
+
+/* Kassenbons */
+.bons{grid-column:1/-1}
+.bons h2{display:flex;align-items:center;gap:8px}
+.bons .hint{color:var(--muted);font-size:13px;margin:4px 0 8px}
+details.bon{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+details.bon summary{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;flex-wrap:wrap}
+.bmeta{min-width:0}.bmeta small{color:var(--muted)}
+.bsum{margin-left:auto;font-family:var(--f-display);font-weight:700;font-size:18px}
+.bcnt{width:100%;color:var(--muted);font-size:12px}
+@media (min-width:600px){.bcnt{width:auto;order:3}}
+table.bz{width:100%;border-collapse:collapse;font-size:13px}
+table.bz td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}
+table.bz .bm{white-space:nowrap;color:var(--muted)}
+table.bz .bp{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.bz .bp small{display:block;color:var(--muted);font-size:11px}
+table.bz tr.bx td{color:var(--muted)}
+.brab{color:var(--best);font-weight:600}
+.bfoot{padding:6px 10px;border-top:1px solid var(--line);text-align:right}
+.bdel{font:inherit;font-size:12px;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer}
+.bdel[data-arm="1"]{color:var(--err);font-weight:700}
+#bnew:disabled{opacity:.5}
+.bons[hidden]{display:none}

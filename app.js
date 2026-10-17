@@ -842,3 +842,41 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
     essen.busy=false;sb.disabled=false};
 })();
 initEssen();
+
+// Kassenbons (Web-Version): Foto rein, Zeilen mit Preisen raus
+var bons={on:false,list:[],busy:false};
+async function initBons(){
+  const B=window.MK_BON;if(!B)return;
+  try{const l=await B.get();if(!l)return;bons.on=true;bons.list=l;document.getElementById("bons").hidden=false;drawBons()}catch(e){}
+}
+const fmtMenge=(m,u)=>u==="Stk"?(m===1?"":m+" Stk"):(u==="kg"&&m<1?Math.round(m*1000)+" g":u==="l"&&m<1?Math.round(m*1000)+" ml":String(m).replace(".",",")+" "+u);
+function drawBons(){
+  const el=document.getElementById("blist");
+  if(!bons.list.length){el.innerHTML=`<p class="hint">Noch keine Bons.</p>`;return}
+  el.innerHTML=bons.list.map(b=>{const ware=b.zeilen.filter(z=>z.typ==="ware");const zu=ware.filter(z=>z.artikel).length;
+    const [Y,M,D]=String(b.datum).split("-");
+    return `<details class="bon"><summary>${logo(b.laden)}<span class="bmeta"><strong>${esc(sname(b.laden))}</strong> ${esc(D+"."+M+"."+Y)}${b.filiale?` <small>${esc(b.filiale)}</small>`:""}</span><span class="bsum">${eur(b.summe)}</span><small class="bcnt">${ware.length} Artikel, ${zu} zugeordnet</small></summary>
+    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div>${esc(z.name||z.text)}</div>${z.artikel?`<span class="part">${esc(z.artikel)}</span>`:""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
+    <div class="bfoot"><button type="button" class="bdel" data-id="${esc(b.id)}">Bon löschen</button></div></details>`}).join("");
+}
+function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
+  img.onload=()=>{const m=1800,sc=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL("image/jpeg",0.82))};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej()};img.src=url})}
+(function wireBons(){
+  const sec=document.getElementById("bons");if(!sec)return;
+  const info=document.getElementById("binfo"),def=info.textContent;
+  document.getElementById("bnew").onclick=()=>{if(!bons.busy)document.getElementById("bfile").click()};
+  document.getElementById("bfile").onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f||bons.busy)return;
+    bons.busy=true;const btn=document.getElementById("bnew");btn.disabled=true;info.textContent="Bon wird gelesen, das dauert bis zu einer halben Minute …";
+    try{const foto=await shrinkBon(f);const r=await window.MK_BON.add(foto);
+      if(r&&r.bon){bons.list.unshift(r.bon);drawBons();const d=sec.querySelector("details.bon");if(d)d.open=true;info.textContent=`Gelesen: ${r.bon.zeilen.length} Zeilen bei ${sname(r.bon.laden)}. Prüf kurz, ob alles stimmt.`}
+      else info.textContent=r&&r.msg==="nicht lesbar"?"Der Bon war nicht lesbar. Versuch ein schärferes Foto, gerade von oben und mit gutem Licht.":"Das hat nicht geklappt, bitte nochmal."}
+    catch(err){info.textContent="Das hat nicht geklappt, bitte nochmal."}
+    bons.busy=false;btn.disabled=false};
+  sec.addEventListener("click",async e=>{const b=e.target.closest(".bdel");if(!b)return;
+    if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="Wirklich löschen?";setTimeout(()=>{b.dataset.arm="";b.textContent="Bon löschen"},3000);return}
+    const id=+b.dataset.id;b.disabled=true;const ok=await window.MK_BON.del(id).catch(()=>false);
+    if(ok){bons.list=bons.list.filter(x=>x.id!==id);drawBons();info.textContent=def}else{b.disabled=false}});
+})();
+initBons();
