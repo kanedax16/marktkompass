@@ -693,7 +693,7 @@ function applyData(data,fdata){
     // Gleiche Regeln wie im Workflow (gelten dort ab dem nächsten Lauf): keine Nicht-Lebensmittel wie WC-Ente oder Enteiserspray,
     // nichts Verarbeitetes bei Obst, Gemüse, Fleisch, Fisch, Milch und Eiern
     const NONFOOD_RX=/\bwc\b|reiniger|spray|lichtschlauch|\bled\b|lampe|\bwein\b|rosewein|weißwein|rotwein|chiaretto|\bsekt\b|likör|\bcola\b|limonade|stollen|röllchen|torte|kuchen|keks|gebäck|leberkäs|leberwurst|holz|figur|bettwäsche|deko\b|kerze/i;
-    const PROC_RX=/rahm-|\brahm\b|karottensalat|möhrensalat|krautsalat|gurkensalat|rohkostsalat|einzelpreis|gewürzgurke|brät\b|cordon|kibbeling|knusper|mit sauce|in sauce|paniert|gegart|gebraten|mariniert|aufschnitt|genuss\b|versch\.? sorten|fertiggericht/i;
+    const PROC_RX=/in stücken|stückig|passiert|passata|schwedenhappen|southern|fried|crispy|nugget|streifen|happen\b|rahm-|\brahm\b|karottensalat|möhrensalat|krautsalat|gurkensalat|rohkostsalat|einzelpreis|gewürzgurke|brät\b|cordon|kibbeling|knusper|mit sauce|in sauce|paniert|gegart|gebraten|mariniert|aufschnitt|genuss\b|versch\.? sorten|fertiggericht/i;
     rows=rows.filter(r=>{if(r.grp==="Haushalt")return true;const t=r.product+" "+r.brand+" "+r.description;if(NONFOOD_RX.test(t))return false;return !(/^(Obst|Gemüse|Fleisch|Fisch|Milch & Eier)$/.test(r.grp)&&PROC_RX.test(t))});
     // Bier und Biermix (z. B. Grapefruit Weizen-Mix) sind kein Obst und enthalten Zucker: raus
     rows=rows.filter(r=>!/\bbier\b|bier-|biermix|weizen-mix|radler/i.test(r.product+" "+r.description));
@@ -702,6 +702,10 @@ function applyData(data,fdata){
       const nowIso=new Date().toISOString(),act=x=>!x.validFrom||String(x.validFrom)<=nowIso;
       if(!o||(act(r)&&!act(o))||(act(r)===act(o)&&String(r.validTo||"9")>String(o.validTo||"9")))best.set(k,r)}
      rows=[...best.values()]}
+    {const seen=new Map(),out=[];for(const r of rows){const a=r.artKI||"";if(!a||r.kind!=="angebot"){out.push(r);continue}
+      const k=[r.retailer,a,String(r.brand).toLowerCase().trim(),r.price,r.refPrice,r.unit,r.loyalty].join("|");const o=seen.get(k);
+      if(!o){seen.set(k,r);out.push(r)}else if(String(r.validTo||"")>String(o.validTo||"")){out[out.indexOf(o)]=r;seen.set(k,r)}}
+     rows=out}
     // Artikelname aus deiner Artikelliste (vom n8n-Workflow gesetzt), sonst die eigene Erkennung
     rows.forEach(r=>r.art=r.artKI||article(r));
     // Apfelschorle ist ein eigener Artikel (bis zum nächsten Lauf noch unter Äpfel einsortiert)
