@@ -192,6 +192,7 @@ function render(){
   applyView();
   if(st.view==="shop"){renderShop();return}
   if(st.view==="saison"){renderSaison();return}
+  if(st.view==="prosp"){renderProsp(now);return}
   const list=document.getElementById("list");
   if(!rows.length)return;
   const vis=rows.map(r=>({...r,st:status(r,now)})).filter(r=>{
@@ -218,10 +219,11 @@ function render(){
       const best=bestOf(units[0]), unit=units[0];
       const maxU={};arr.forEach(o=>maxU[o.unit]=Math.max(maxU[o.unit]||0,o.refPrice||0));
       const uTxt=u=>"€/"+(u==="Stk"?"Stk":u);
+      const nOffers=arr.filter(o=>o.kind==="angebot"&&o.st!=="soon").length;
       const d=document.createElement("details");d.className="item";d.open=!!st.q;
       d.innerHTML=`<summary>
         <img class="px" src="${icon(cat,g)}" alt="">
-        <div class="itxt"><div class="iname">${esc(cat)}</div></div>
+        <div class="itxt"><div class="iname">${esc(cat)}${nOffers?`<span class="obadge" title="${nOffers} ${nOffers===1?"Angebot":"Angebote"} gerade">% ${nOffers}</span>`:""}</div></div>
         <button type="button" class="addb" data-art="${esc(cat)}" data-u="${esc(unit)}" aria-label="${esc(cat)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button>
         <div class="tag${units.length>1?" multi":""}"><div class="u">ab</div>${units.slice(0,2).map(u=>`<div class="p">${eur(bestOf(u).refPrice).replace(" €","")}</div><div class="u">${esc(uTxt(u))}</div>`).join("")}</div>
       </summary>
@@ -395,9 +397,9 @@ const views=document.querySelectorAll(".views button");
 st.view=lsGet("bpf_view","deals");
 views.forEach(b=>b.onclick=()=>{st.view=b.dataset.v;lsSet("bpf_view",st.view);render();window.scrollTo(0,0)});
 function applyView(){
-  const shop=st.view==="shop",sai=st.view==="saison",deals=!shop&&!sai;
+  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",deals=!shop&&!sai&&!pro;
   views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
-  document.querySelector(".panel").hidden=!deals;document.getElementById("list").hidden=!deals;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;
+  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
 }
 
@@ -500,7 +502,43 @@ dlg.onsubmit=e=>{e.preventDefault();
   if(editing)Object.assign(editing,{name,portions,items});else dishes.push({id:uid(),name,portions,items});
   saveDishes();closeEditor();render()};
 
+// ===== Prospekte: alle aktuellen Angebote nach Laden =====
+// Ersparnis eines Angebots: gegenüber Streichpreis, Normalpreis im Laden oder üblichem Preis
+function offerSave(r){
+  if(r.oldPrice&&r.oldPrice>r.price)return 1-r.price/r.oldPrice;
+  const ref=r.regRef>r.refPrice?r.regRef:(r.usualRef&&r.usualN>=2&&r.usualRef>r.refPrice?r.usualRef:0);
+  return ref?1-r.refPrice/ref:0;
+}
+function renderProsp(now){
+  const el=document.getElementById("prosp");
+  if(!rows.length){el.innerHTML="";return}
+  const offers=rows.map(r=>({...r,st:status(r,now)})).filter(r=>{
+    if(r.kind!=="angebot"||!baseOk(r,now))return false;if(st.grp!=="Alle"&&r.grp!==st.grp)return false;
+    if(st.q){const h=clean(r.product+" "+r.brand+" "+r.description+" "+r.category+" "+r.art).toLowerCase();if(!h.includes(st.q)&&!(SYN[st.q]&&h.includes(SYN[st.q])))return false}
+    return true});
+  if(!offers.length){el.innerHTML=`<div class="empty">Gerade keine Angebote${st.q?` zu „${esc(st.q)}“`:""}. Neue Prospekte kommen jede Nacht um 3:07 Uhr.</div>`;return}
+  const by={};offers.forEach(r=>(by[r.retailer]=by[r.retailer]||[]).push(r));
+  const near=k=>{const f=fils.find(x=>x.retailer===k&&x.km!=null);return f?f.km:null};
+  const stores=Object.keys(by).sort((a,b)=>((near(a)??99)-(near(b)??99))||by[b].length-by[a].length);
+  const until=arr=>{const t=arr.map(r=>r.validTo).filter(Boolean).sort();return t.length?dfmt(new Date(t[t.length-1])):""};
+  el.innerHTML=`<p class="phead">${offers.length} Angebote in ${stores.length} Läden${st.grp!=="Alle"?" · "+esc(st.grp):""}, sortiert nach Entfernung ab Lokhalle</p>`+stores.map(k=>{
+    const arr=by[k],km=near(k);
+    const grps=GROUPS.filter(g=>arr.some(r=>r.grp===g));
+    return`<details class="pstore" open><summary>${logo(k)}<span class="psn">${esc(sname(k))}</span><span class="psm">${arr.length} ${arr.length===1?"Angebot":"Angebote"}${km!=null?" · "+kmTxt(km):""}${until(arr)?" · bis "+until(arr):""}</span></summary>
+      ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
+        <div class="prow${oneDay(r)?" oneday":""}"><img class="px" src="${icon(r.art,r.grp)}" alt="">
+          <div class="pinfo"><div class="pn">${esc(r.product)}${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
+            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}</div></div>
+          ${s>=.05?`<span class="pct">−${Math.round(s*100)} %</span>`:""}
+          <strong class="pp">${eur(r.price)}</strong>
+          <button type="button" class="addb" data-art="${esc(r.art||r.product)}" data-u="${esc(r.unit)}" aria-label="${esc(r.art||r.product)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button></div>`).join("")).join("")}
+    </details>`}).join("");
+}
+
 // Aus der Angebotsliste direkt auf die Einkaufsliste
+document.getElementById("prosp").addEventListener("click",e=>{const b=e.target.closest(".addb");if(!b)return;e.preventDefault();e.stopPropagation();
+  const u=b.dataset.u;cart.extra.push(u==="kg"?{n:b.dataset.art,q:500,u:"g"}:u==="l"?{n:b.dataset.art,q:1,u:"l"}:{n:b.dataset.art,q:1,u:"Stk"});
+  saveCart();b.textContent="✓";b.classList.add("ok");setTimeout(()=>{b.textContent="+";b.classList.remove("ok")},1200);applyView()});
 document.getElementById("list").addEventListener("click",e=>{const b=e.target.closest(".addb");if(!b)return;e.preventDefault();e.stopPropagation();
   const u=b.dataset.u;cart.extra.push(u==="kg"?{n:b.dataset.art,q:500,u:"g"}:u==="l"?{n:b.dataset.art,q:1,u:"l"}:{n:b.dataset.art,q:1,u:"Stk"});
   saveCart();b.textContent="✓";b.classList.add("ok");setTimeout(()=>{b.textContent="+";b.classList.remove("ok")},1200);applyView()});

@@ -255,3 +255,25 @@ footer{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:
 body.gast #padd,body.gast .phint{display:none}
 body.gast #pterms button{display:none}
 body.gast #pshops{pointer-events:none;opacity:.6}
+
+/* Angebots-Abzeichen in den Kacheln */
+.obadge{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#fff;background:#d6302b;border-radius:999px;padding:0 6px;vertical-align:2px;line-height:16px}
+/* Prospekte */
+.prosp{display:flex;flex-direction:column;gap:10px}
+.prosp .phead{margin:2px 2px 0;font-size:13px;color:var(--muted)}
+.pstore{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.pstore summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--soft);border-bottom:1px solid var(--line)}
+.pstore summary::-webkit-details-marker{display:none}
+.pstore summary .logo{height:22px;max-width:60px;object-fit:contain}
+.pstore .psn{font-weight:700;font-size:15px}
+.pstore .psm{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+.pstore h4{margin:8px 10px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:0 8px;align-items:center;padding:5px 10px;border-top:1px solid var(--line)}
+.prow:first-of-type{border-top:0}
+.prow .px{width:28px;height:28px;image-rendering:pixelated}
+.prow .pn{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.prow .meta{font-size:12px;color:var(--muted)}
+.prow .pct{font-weight:700;font-size:12px;color:#fff;background:var(--best,#1f7a3a);border-radius:5px;padding:1px 6px}
+.prow .pp{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.prow.oneday{outline:1.5px solid #d6302b;outline-offset:-1.5px}
+@media (max-width:560px){.prow{grid-template-columns:auto minmax(0,1fr) auto auto}.prow .pct{display:none}.views button{padding:5px 6px;font-size:12px}}
