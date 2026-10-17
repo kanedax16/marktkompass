@@ -235,7 +235,7 @@ function render(){
         <td class="pname"><strong>${esc(o.product)}</strong>${o.brand?` <span class="meta">${esc(o.brand)}</span>`:""}${pills(o)}<div class="meta">${esc(o.description)}</div><div class="bar"><i style="width:${Math.max(6,Math.round(o.refPrice/(maxU[o.unit]||1)*100))}%"></i></div></td>
         <td class="num">${eur(o.price)}${o.oldPrice?`<span class="strike">${eur(o.oldPrice)}</span>`:""}${amt(o)?`<div class="meta">für ${amt(o)}</div>`:""}</td>
         <td class="num"><strong>${eur(o.refPrice)}</strong><div class="meta">je ${esc(UNIT[o.unit]||o.unit)}</div></td>
-        <td style="white-space:nowrap">${!o.validFrom&&!o.validTo?`<span class="meta">${o.kind==="normalpreis"?"Normalpreis":"Dauerpreis"}</span>`:`${o.validFrom?dfmt(new Date(o.validFrom)):""}<br><span class="meta">bis ${o.validTo?dfmt(new Date(o.validTo)):"?"}</span>`}</td></tr>`).join("")}
+        <td style="white-space:nowrap">${!o.validFrom&&!o.validTo?`<span class="meta">${o.kind==="normalpreis"?"Normalpreis":o.kind==="bonpreis"?"Euer Bonpreis":"Dauerpreis"}</span>`:`${o.validFrom?dfmt(new Date(o.validFrom)):""}<br><span class="meta">bis ${o.validTo?dfmt(new Date(o.validTo)):"?"}</span>`}</td></tr>`).join("")}
       </tbody></table></div>`;
       grid.appendChild(d)});
     list.appendChild(sec);
@@ -300,7 +300,7 @@ function renderSteals(vis,list){
       ${arr.map(([x,i])=>card(x,i)).join("")}</div>`).join("")}</div>`;
   list.appendChild(sec);
 }
-function pills(o){let h="";if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
+function pills(o){let h="";if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
 
 // ===== Einkaufen: gespeicherte Gerichte und Einkaufsliste =====
 const UNITS=["g","kg","Stk","ml","l","Bund","Pck"];
