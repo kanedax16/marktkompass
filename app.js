@@ -193,6 +193,7 @@ function render(){
   if(st.view==="shop"){renderShop();return}
   if(st.view==="saison"){renderSaison();return}
   if(st.view==="prosp"){renderProsp(now);return}
+  if(st.view==="pruef"){renderPruef();return}
   const list=document.getElementById("list");
   if(!rows.length)return;
   const vis=rows.map(r=>({...r,st:status(r,now)})).filter(r=>{
@@ -397,9 +398,10 @@ const views=document.querySelectorAll(".views button");
 st.view=lsGet("bpf_view","deals");
 views.forEach(b=>b.onclick=()=>{st.view=b.dataset.v;lsSet("bpf_view",st.view);render();window.scrollTo(0,0)});
 function applyView(){
-  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",deals=!shop&&!sai&&!pro;
+  if(st.view==="pruef"&&!(typeof pruef!=="undefined"&&pruef&&pruef.on))st.view="deals";
+  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",deals=!shop&&!sai&&!pro&&!pru;
   views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
-  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;
+  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
 }
 
@@ -719,3 +721,39 @@ function applyData(data,fdata){
     if(!rows.length){document.getElementById("list").innerHTML=`<div class="empty">Die Tabelle ist gerade leer. Der nächste Lauf ist heute Nacht um 3:07 Uhr; du kannst ihn in n8n auch manuell starten.</div>`;return}
     buildStores();renderQuick();fillArtlist();render();
 }
+
+// Reiter Prüfen (nur Besitzer, nur in der Web-Version): wo die KI unsicher war oder aussortiert hat, entscheidest du einmal, das gilt dauerhaft
+var pruef={on:false,items:[],at:"",busy:new Set()};
+function pruefCount(){const n=pruef.items.filter(x=>x.s<70).length;const c=document.getElementById("pcount");if(c){c.textContent=n||"";c.hidden=!n}}
+async function initPruef(){
+  const P=window.MK_PRUEF;if(!P)return;
+  try{const d=await P.get();if(!d)return;pruef.on=true;pruef.items=d.items||[];pruef.at=d.at||"";
+    document.getElementById("pruefbtn").hidden=false;pruefCount();if(st.view==="pruef"||lsGet("bpf_view","")==="pruef"){st.view="pruef"}render();
+  }catch(e){}
+}
+function pruefCard(x,ausg){
+  const pr=x.pr!=null?eur(x.pr)+(x.u?" / "+(x.u==="Stk"?"Stück":x.u):""):"";
+  const hint=ausg?`KI sortiert aus (${x.s} %)`:`KI ${x.ki==="ja"?"eher ja":"eher nein"} (${x.s} %)`;
+  return `<div class="pcard" data-k="${esc(x.k)}">
+    <div class="pmain"><div class="pname">${esc(x.p)}${x.b?` <small>${esc(x.b)}</small>`:""}</div>
+    <div class="pmeta">${logo(x.r)} <span class="part">als ${esc(x.a)}</span> ${pr?`<span>${esc(pr)}</span>`:""}</div>
+    <div class="pki">${esc(hint)}${x.gr?": "+esc(x.gr):""}</div></div>
+    <div class="pbtns"><button type="button" class="pok" data-e="ja" aria-label="Passt, behalten">${ausg?"Doch behalten":"Passt"}</button><button type="button" class="pno" data-e="nein" aria-label="Passt nicht, aussortieren">${ausg?"Raus":"Raus"}</button></div></div>`;
+}
+function renderPruef(){
+  const el=document.getElementById("pruef");
+  const un=pruef.items.filter(x=>x.s<70),au=pruef.items.filter(x=>x.s>=70);
+  const st_=pruef.at?new Date(pruef.at).toLocaleString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+  el.innerHTML=`<div class="phead"><h2>Prüfen</h2><p class="hint">Nur für dich sichtbar. Hier landet, wo die KI unsicher war. <strong>Passt</strong> heißt, das Produkt gehört zu diesem Artikel; <strong>Raus</strong> heißt, es fliegt dauerhaft raus. Deine Entscheidung gilt ab dem nächsten nächtlichen Lauf und hilft der KI.${st_?` Stand ${esc(st_)}.`:""}</p></div>
+  <section><h3>Unsicher <small>${un.length}</small></h3>${un.length?`<div class="plist">${un.map(x=>pruefCard(x,false)).join("")}</div>`:`<p class="hint">Nichts offen. Gut so.</p>`}</section>
+  ${au.length?`<details class="paus"><summary>Von der KI aussortiert <small>${au.length}</small></summary><p class="hint">Diese Produkte zeigt die App schon nicht mehr an. Wenn eins zu Unrecht fehlt, hol es mit „Doch behalten“ zurück.</p><div class="plist">${au.map(x=>pruefCard(x,true)).join("")}</div></details>`:""}`;
+}
+document.getElementById("pruef").addEventListener("click",async e=>{
+  const b=e.target.closest(".pbtns button");if(!b)return;const card=b.closest(".pcard");const k=card&&card.dataset.k;
+  const x=pruef.items.find(y=>y.k===k);if(!x||pruef.busy.has(k))return;pruef.busy.add(k);
+  card.classList.add("busy");card.querySelectorAll("button").forEach(z=>z.disabled=true);
+  const ok=await window.MK_PRUEF.decide(x,b.dataset.e).catch(()=>false);pruef.busy.delete(k);
+  if(ok){pruef.items=pruef.items.filter(y=>y.k!==k);card.classList.add("gone");setTimeout(()=>{renderPruef();pruefCount()},180)}
+  else{card.classList.remove("busy");card.querySelectorAll("button").forEach(z=>z.disabled=false);card.querySelector(".pki").textContent="Speichern hat nicht geklappt, bitte nochmal."}
+});
+initPruef();

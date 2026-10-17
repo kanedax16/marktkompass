@@ -277,3 +277,28 @@ body.gast #pshops{pointer-events:none;opacity:.6}
 .prow .pp{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prow.oneday{outline:1.5px solid #d6302b;outline-offset:-1.5px}
 @media (max-width:560px){.prow{grid-template-columns:auto minmax(0,1fr) auto auto}.prow .pct{display:none}.views button{padding:5px 6px;font-size:12px}}
+
+/* Reiter Prüfen (nur Besitzer) */
+.views #pcount{background:var(--warn);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;line-height:16px}
+.pruef{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+.pruef h2{font-size:26px}
+.pruef h3{font-family:var(--f-display);font-size:19px;margin:0 0 8px}
+.pruef h3 small,.paus summary small{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+.pruef .hint{color:var(--muted);font-size:13px;margin:4px 0 0;max-width:70ch}
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:8px}
+.pcard{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface);min-width:0;transition:opacity .18s}
+.pcard.busy{opacity:.55}.pcard.gone{opacity:0}
+.pmain{min-width:0;display:flex;flex-direction:column;gap:3px}
+.pname{font-weight:700;overflow-wrap:anywhere}.pname small{font-weight:400;color:var(--muted)}
+.pmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.part{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:0 7px;color:var(--fg)}
+.pki{font-size:12px;color:var(--warn)}
+.pbtns{display:flex;gap:6px;flex:none}
+.pbtns button{font:inherit;font-size:13px;font-weight:700;border-radius:8px;padding:6px 10px;cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--fg);white-space:nowrap}
+.pbtns .pok{background:var(--best-soft);border-color:var(--best);color:var(--best)}
+.pbtns .pno{background:var(--err-soft);border-color:var(--err);color:var(--err)}
+.paus{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface)}
+.paus summary{cursor:pointer;font-family:var(--f-display);font-size:19px;font-weight:700}
+.paus .plist{margin-top:8px}
+@media (max-width:520px){.pcard{flex-direction:column;align-items:stretch}.pbtns button{flex:1}}
+.pruef .phead{display:block}

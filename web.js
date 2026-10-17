@@ -91,6 +91,12 @@
     return{payload:{rows:all.slice(skip,skip+lim),count:all.length}};
   }};
 
+  // Reiter Prüfen: nur mit dem Besitzer-Link
+  window.MK_PRUEF={
+    get:async()=>{const d=await fetchData();return d&&d.role==="owner"?(d.pruefen||{items:[],at:""}):null},
+    decide:async(x,e)=>{const r=await post({t:"pruefen",pkey:x.k,entscheid:e,product:x.p,art:x.a});return !!(r&&r.ok)}
+  };
+
   window.claude={use:async k=>k==="db"?db:k==="user"?user:k==="mcp"?mcp:null};
 
   // Beim Zurückkehren in die App die Liste des anderen nachladen (höchstens alle 30 Sekunden)
