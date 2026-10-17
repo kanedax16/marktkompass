@@ -97,6 +97,13 @@
     decide:async(x,e)=>{const r=await post({t:"pruefen",pkey:x.k,entscheid:e,product:x.p,art:x.a});return !!(r&&r.ok)}
   };
 
+  // Essens-Tagebuch: beide Links dürfen eintragen
+  window.MK_ESSEN={
+    get:async()=>{const d=await fetchData();return d?{meals:d.meals||[],role:d.role}:null},
+    add:async o=>{const r=await post({t:"essen",...o});return r&&r.ok?r.meal:null},
+    del:async id=>{const r=await post({t:"essen_del",id});return !!(r&&r.ok)}
+  };
+
   window.claude={use:async k=>k==="db"?db:k==="user"?user:k==="mcp"?mcp:null};
 
   // Beim Zurückkehren in die App die Liste des anderen nachladen (höchstens alle 30 Sekunden)

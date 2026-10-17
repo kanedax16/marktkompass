@@ -194,6 +194,7 @@ function render(){
   if(st.view==="saison"){renderSaison();return}
   if(st.view==="prosp"){renderProsp(now);return}
   if(st.view==="pruef"){renderPruef();return}
+  if(st.view==="essen"){renderEssen();return}
   const list=document.getElementById("list");
   if(!rows.length)return;
   const vis=rows.map(r=>({...r,st:status(r,now)})).filter(r=>{
@@ -399,9 +400,10 @@ st.view=lsGet("bpf_view","deals");
 views.forEach(b=>b.onclick=()=>{st.view=b.dataset.v;lsSet("bpf_view",st.view);render();window.scrollTo(0,0)});
 function applyView(){
   if(st.view==="pruef"&&!(typeof pruef!=="undefined"&&pruef&&pruef.on))st.view="deals";
-  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",deals=!shop&&!sai&&!pro&&!pru;
+  if(st.view==="essen"&&!(typeof essen!=="undefined"&&essen&&essen.on))st.view="deals";
+  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",ess=st.view==="essen",deals=!shop&&!sai&&!pro&&!pru&&!ess;
   views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
-  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;
+  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
 }
 
@@ -757,3 +759,86 @@ document.getElementById("pruef").addEventListener("click",async e=>{
   else{card.classList.remove("busy");card.querySelectorAll("button").forEach(z=>z.disabled=false);card.querySelector(".pki").textContent="Speichern hat nicht geklappt, bitte nochmal."}
 });
 initPruef();
+
+// Essens-Tagebuch (Web-Version): was gab's, wie war's. Daraus lernt der spätere Wochenplan.
+var essen={on:false,meals:[],role:"",sel:{dish:"",urteil:"",mahlzeit:"",tag:0,foto:""},busy:false};
+const URTEIL={gern:"Gern wieder",okay:"Okay",nein:"Lieber nicht"};
+const MZ=["Frühstück","Mittag","Abend","Snack"];
+const isoDay=off=>{const d=new Date();d.setDate(d.getDate()-off);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const mzNow=()=>{const h=new Date().getHours();return h<11?"Frühstück":h<15?"Mittag":h<17?"Snack":"Abend"};
+async function initEssen(){
+  const E=window.MK_ESSEN;if(!E)return;
+  try{const d=await E.get();if(!d)return;essen.on=true;essen.meals=d.meals||[];essen.role=d.role||"";
+    document.getElementById("essenbtn").hidden=false;if(lsGet("bpf_view","")==="essen")st.view="essen";render()}catch(e){}
+}
+function knownDishes(){
+  const cnt=new Map();
+  for(const m of essen.meals){if(m.urteil==="nein")continue;cnt.set(m.name,(cnt.get(m.name)||0)+(m.urteil==="gern"?2:1))}
+  for(const d of dishes)if(d.name&&!cnt.has(d.name))cnt.set(d.name,0.5);
+  return [...cnt.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+}
+function dayLabel(iso){const t=isoDay(0),y=isoDay(1);if(iso===t)return "Heute";if(iso===y)return "Gestern";
+  const [Y,M,D]=String(iso).split("-").map(Number);return new Date(Y,M-1,D).toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}
+function renderEssen(){
+  const el=document.getElementById("essen");const ms=essen.meals;
+  // Was ihr mögt: oft und gern gegessen, und was nicht ankommt
+  const by=new Map();for(const m of ms){const o=by.get(m.name)||{n:0,g:0,x:0};o.n++;if(m.urteil==="gern")o.g++;if(m.urteil==="nein")o.x++;by.set(m.name,o)}
+  const fav=[...by.entries()].filter(([,o])=>o.g>0&&o.g>=o.x).sort((a,b)=>b[1].g-a[1].g||b[1].n-a[1].n).slice(0,10);
+  const nope=[...by.entries()].filter(([,o])=>o.x>o.g).slice(0,8);
+  const days=[];for(const m of ms){let d=days.find(x=>x.d===m.datum);if(!d){d={d:m.datum,l:[]};days.push(d)}d.l.push(m)}
+  const who=m=>m.rolle===essen.role?"du":"Mitbewohner:in";
+  el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Tragt ein, was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
+  ${fav.length||nope.length?`<section class="elike">${fav.length?`<div><h3>Gern gegessen</h3><div class="echips">${fav.map(([n,o])=>`<button type="button" class="chip" data-quick="${esc(n)}">${esc(n)}${o.g>1?` <small>${o.g}×</small>`:""}</button>`).join("")}</div></div>`:""}${nope.length?`<div><h3>Kommt nicht so an</h3><div class="echips">${nope.map(([n])=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div>`:""}</section>`:""}
+  <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,who(m),m.zutaten].filter(Boolean).join(" · "))}</div></div>${m.urteil?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
+}
+function openEssen(pre){
+  essen.sel={dish:pre||"",urteil:"",mahlzeit:mzNow(),tag:0,foto:""};
+  const o=document.getElementById("eovl");o.hidden=false;document.getElementById("etext").value="";document.getElementById("einfo").textContent="";
+  document.getElementById("eprev").hidden=true;document.getElementById("efile").value="";drawEssenDlg();
+}
+function drawEssenDlg(){
+  const s=essen.sel;
+  document.getElementById("emz").innerHTML=MZ.map(m=>`<button type="button" class="chip" data-mz="${m}" aria-pressed="${s.mahlzeit===m}">${m}</button>`).join("");
+  document.getElementById("etag").innerHTML=["Heute","Gestern","Vorgestern"].map((t,i)=>`<button type="button" class="chip" data-tag="${i}" aria-pressed="${s.tag===i}">${t}</button>`).join("");
+  const kd=knownDishes().slice(0,14);
+  document.getElementById("edish").innerHTML=kd.length?kd.map(n=>`<button type="button" class="chip" data-dish="${esc(n)}" aria-pressed="${s.dish===n}">${esc(n)}</button>`).join(""):`<span class="hint">Eure Gerichte erscheinen hier, sobald ihr welche eintragt.</span>`;
+  document.getElementById("eurt").innerHTML=Object.entries(URTEIL).map(([k,v])=>`<button type="button" class="eub u-${k}" data-u="${k}" aria-pressed="${s.urteil===k}">${v}</button>`).join("");
+}
+function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
+  img.onload=()=>{const m=1024,sc=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL("image/jpeg",0.75))};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej()};img.src=url})}
+(function wireEssen(){
+  const el=document.getElementById("essen");if(!el)return;
+  el.addEventListener("click",async e=>{
+    if(e.target.closest("#enew")){openEssen("");return}
+    const q=e.target.closest("[data-quick]");if(q){openEssen(q.dataset.quick);return}
+    const d=e.target.closest(".edel");if(d){
+      if(d.dataset.arm!=="1"){d.dataset.arm="1";d.textContent="löschen?";setTimeout(()=>{d.dataset.arm="";d.textContent="×"},3000);return}
+      const id=+d.dataset.id;d.disabled=true;const ok=await window.MK_ESSEN.del(id).catch(()=>false);
+      if(ok){essen.meals=essen.meals.filter(m=>m.id!==id);renderEssen()}else{d.disabled=false;d.textContent="×"}}
+  });
+  const dlg=document.getElementById("edlg"),ovl=document.getElementById("eovl");
+  const close=()=>{ovl.hidden=true};
+  document.getElementById("ecancel").onclick=close;ovl.addEventListener("click",e=>{if(e.target===ovl)close()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!ovl.hidden)close()});
+  dlg.addEventListener("click",e=>{const s=essen.sel;let b;
+    if(b=e.target.closest("[data-mz]"))s.mahlzeit=b.dataset.mz;
+    else if(b=e.target.closest("[data-tag]"))s.tag=+b.dataset.tag;
+    else if(b=e.target.closest("[data-dish]"))s.dish=s.dish===b.dataset.dish?"":b.dataset.dish;
+    else if(b=e.target.closest("[data-u]"))s.urteil=s.urteil===b.dataset.u?"":b.dataset.u;
+    else if(e.target.closest("#efoto")){document.getElementById("efile").click();return}
+    else if(e.target.closest("#erm")){s.foto="";document.getElementById("eprev").hidden=true;document.getElementById("efile").value="";return}
+    else return;drawEssenDlg()});
+  document.getElementById("efile").onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
+    try{essen.sel.foto=await shrinkPhoto(f);const p=document.getElementById("eprev");p.hidden=false;p.querySelector("img").src=essen.sel.foto}catch(err){document.getElementById("einfo").textContent="Das Foto ließ sich nicht lesen."}};
+  dlg.onsubmit=async e=>{e.preventDefault();if(essen.busy)return;const s=essen.sel,text=document.getElementById("etext").value.trim(),info=document.getElementById("einfo");
+    if(!s.dish&&!text&&!s.foto){info.textContent="Tippe ein Gericht an, schreib kurz, was es gab, oder mach ein Foto.";return}
+    const d=dishes.find(x=>x.name===s.dish);
+    essen.busy=true;const sb=document.getElementById("esave");sb.disabled=true;info.textContent=s.foto||text?"Gericht wird erkannt …":"wird gespeichert …";
+    try{const meal=await window.MK_ESSEN.add({dish:s.dish,text,foto:s.foto,urteil:s.urteil,mahlzeit:s.mahlzeit,datum:isoDay(s.tag),bekannt:knownDishes().slice(0,80),zutaten:d?d.items.map(i=>i.n):[]});
+      if(!meal)throw 0;essen.meals.unshift({...meal,id:meal.id});essen.meals.sort((a,b)=>String(b.datum+b.at).localeCompare(String(a.datum+a.at)));close();renderEssen()}
+    catch(err){info.textContent="Speichern hat nicht geklappt, bitte nochmal."}
+    essen.busy=false;sb.disabled=false};
+})();
+initEssen();
