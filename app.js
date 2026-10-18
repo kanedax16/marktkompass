@@ -225,8 +225,8 @@ function render(){
       const nOffers=arr.filter(o=>o.kind==="angebot"&&o.st!=="soon").length;
       const d=document.createElement("details");d.className="item";d.open=!!st.q;
       d.innerHTML=`<summary>
-        <img class="px" src="${icon(cat,g)}" alt="">
-        <div class="itxt"><div class="iname">${esc(cat)}${nOffers?`<span class="obadge" title="${nOffers} ${nOffers===1?"Angebot":"Angebote"} gerade">% ${nOffers}</span>`:""}</div></div>
+        <img class="px aopen" src="${icon(cat,g)}" alt="" data-art="${esc(cat)}">
+        <div class="itxt"><div class="iname"><span class="aopen" data-art="${esc(cat)}">${esc(cat)}</span>${nOffers?`<span class="obadge" title="${nOffers} ${nOffers===1?"Angebot":"Angebote"} gerade">% ${nOffers}</span>`:""}</div></div>
         <button type="button" class="addb" data-art="${esc(cat)}" data-u="${esc(unit)}" aria-label="${esc(cat)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button>
         <div class="tag${units.length>1?" multi":""}"><div class="u">ab</div>${units.slice(0,2).map(u=>`<div class="p">${eur(bestOf(u).refPrice).replace(" €","")}</div><div class="u">${esc(uTxt(u))}</div>`).join("")}</div>
       </summary>
@@ -437,8 +437,8 @@ function renderShop(){
     const sub=arr.reduce((s,e)=>s+(e.cost||0),0);total+=sub;const open=arr.filter(e=>!e.done).length;
     return `<div class="lg"><div class="lh">${k==="_"?`<strong>Ohne Preis</strong>`:`${logo(k)}<strong>${esc(sname(k))}</strong>`}<span>${open} offen${k!=="_"?` · ca. ${eur(sub)}`:""}</span></div>
     ${arr.map(e=>{const o=e.best&&e.best.o;return `<label class="li${e.done?" done":""}" data-key="${esc(e.key)}">
-      <input type="checkbox" ${e.done?"checked":""}><img class="px" src="${icon(e.art||e.name,e.art?grpOf(e.art):null)}" alt="">
-      <span class="lt"><span class="ln"><b>${qtyTxt(e.fam,e.base,e.unit)}</b> ${esc(e.name)}</span>
+      <input type="checkbox" ${e.done?"checked":""}><img class="px aopen" src="${icon(e.art||e.name,e.art?grpOf(e.art):null)}" alt="" data-art="${esc(e.art||e.name)}">
+      <span class="lt"><span class="ln"><b>${qtyTxt(e.fam,e.base,e.unit)}</b> <span class="aopen" data-art="${esc(e.art||e.name)}">${esc(e.name)}</span></span>
       <span class="lo">${o?`${esc(o.product)} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}${homeNote(e.art||e.name)}</span></span>
       ${e.cost!=null?`<span class="lc">${eur(e.cost)}</span>`:""}${e.extra?`<button type="button" class="ibtn" data-act="del" aria-label="${esc(e.name)} entfernen">×</button>`:""}</label>`}).join("")}</div>`}).join("");
   document.getElementById("ltotal").textContent=total?`ca. ${eur(total)} zu den günstigsten Preisen`:"";
@@ -532,8 +532,8 @@ function renderProsp(now){
     const grps=GROUPS.filter(g=>arr.some(r=>r.grp===g));
     return`<details class="pstore" open><summary>${logo(k)}<span class="psn">${esc(sname(k))}</span><span class="psm">${arr.length} ${arr.length===1?"Angebot":"Angebote"}${km!=null?" · "+kmTxt(km):""}${until(arr)?" · bis "+until(arr):""}</span></summary>
       ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
-        <div class="prow${oneDay(r)?" oneday":""}"><img class="px" src="${icon(r.art,r.grp)}" alt="">
-          <div class="pinfo"><div class="pn">${esc(r.product)}${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
+        <div class="prow${oneDay(r)?" oneday":""}"><img class="px aopen" src="${icon(r.art,r.grp)}" alt="" data-art="${esc(r.art||r.product)}">
+          <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${esc(r.product)}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
             <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}</div></div>
           ${s>=.05?`<span class="pct">−${Math.round(s*100)} %</span>`:""}
           <strong class="pp">${eur(r.price)}</strong>
@@ -895,7 +895,7 @@ function drawBons(){
   el.innerHTML=bons.list.map(b=>{const ware=b.zeilen.filter(z=>z.typ==="ware");const zu=ware.filter(z=>z.artikel).length;
     const [Y,M,D]=String(b.datum).split("-");
     return `<details class="bon"><summary>${logo(b.laden)}<span class="bmeta"><strong>${esc(sname(b.laden))}</strong> ${esc(D+"."+M+"."+Y)}${b.filiale?` <small>${esc(b.filiale)}</small>`:""}</span><span class="bsum">${eur(b.summe)}</span><small class="bcnt">${ware.length} Artikel, ${zu} zugeordnet</small></summary>
-    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div${artinfo.on&&z.artikel?` class="aopen" data-art="${esc(z.artikel)}" role="button" tabindex="0"`:""}>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
+    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div${z.artikel?` class="aopen" data-art="${esc(z.artikel)}"`:""}>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
     <div class="bfoot"><button type="button" class="bdel" data-id="${esc(b.id)}">Bon löschen</button></div></details>`}).join("");
 }
 function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
@@ -974,7 +974,7 @@ function renderVorrat(){
   const present=artinfo.on?[...new Set(all.flatMap(x=>katsOf(x.art)))].sort((a,b)=>a.localeCompare(b,"de")):[];
   if(!present.includes(vorrat.kat))vorrat.kat="";
   const its=vorrat.kat?all.filter(x=>katsOf(x.art).includes(vorrat.kat)):all,bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
-  const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn${artinfo.on&&x.art?" aopen":""}"${artinfo.on&&x.art?` data-art="${esc(x.art)}" role="button" tabindex="0"`:""}>${esc(x.name)}${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
+  const row=x=>`<div class="vi ${x.state}"><img class="px aopen" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt="" data-art="${esc(x.art||x.name)}"><div class="vt"><div class="vn"><span class="aopen" data-art="${esc(x.art||x.name)}">${esc(x.name)}</span>${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
   el.innerHTML=`<div class="ehead"><div><h2>Vorrat</h2><p class="hint">Was zu Hause ist und bald weg muss. Füllt sich aus euren Kassenbons, was ihr im Tagebuch esst, zieht die App ab.</p></div></div>
   <h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
   ${present.length>1?`<div class="vkat">${["",...present].map(k=>`<button type="button" class="chip${vorrat.kat===k?" on":""}" data-kat="${esc(k)}">${esc(k||"Alle")}</button>`).join("")}</div>`:""}
@@ -1018,7 +1018,7 @@ function katGuess(art,name){const t=((art||"")+" "+(name||"")).toLowerCase();con
   if(/hafer|müsli|flocken|marmelade|granola/.test(t))s.add("Frühstück");
   return [...s]}
 async function initArtinfo(){const A=window.MK_ART;if(!A)return;
-  try{const l=await A.get();if(!l)return;artinfo.on=true;
+  try{const l=await A.get();if(!l)return;artinfo.on=true;document.body.classList.add("artok");
     for(const a of l)artinfo.map[a.artikel]={kat:String(a.kategorien||"").split(",").map(x=>x.trim()).filter(Boolean),fuer:a.fuer||"beide",ver:a.verarbeitung||"",pfad:String(a.pfad||"").split(">").map(x=>x.trim()).filter(Boolean)};
     if(bons.on)drawBons();if(vorrat.on&&st.view==="vorrat")renderVorrat()}catch(e){}}
 initArtinfo();
@@ -1129,8 +1129,9 @@ function cowSvg(hi){const {w,h,px}=COW;const at=(x,y)=>x<0||y<0||x>=w||y>=h?".":
   o+=`<rect x="${COW.eye[0]}" y="${COW.eye[1]}" width="1" height="1" fill="#1b221d"/><rect x="${COW.nose[0]}" y="${COW.nose[1]}" width="1" height="1" fill="#1b221d"/>`;
   return `<svg class="cow" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" role="img" aria-label="Rind, markiert: ${hi.split("").map(c=>CUTN[c]).join(", ")}">${o}</svg>`}
 // Artikelansicht: Einordnung, Herkunft am Tier, Preisverlauf aus euren Bons
-function openArt(art){
+function openArt(art,editing){
   const i=artinfo.map[art]||{};const p=i.pfad&&i.pfad.length?i.pfad:pathGuess(art,"");
+  const now=new Date();const offs=(typeof rows!=="undefined"?rows:[]).filter(r=>r.art===art&&r.refPrice!=null&&status(r,now)!=="exp"&&baseOk(r,now)).sort((a,b)=>a.refPrice-b.refPrice).slice(0,5);
   const buys=[];for(const b of bons.list||[])for(const z of b.zeilen)if(z.artikel===art&&z.typ==="ware")buys.push({...z,laden:b.laden,datum:b.datum});
   buys.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
   const last=buys[0],v=(last&&last.verarbeitung)||i.ver||"";
@@ -1141,14 +1142,37 @@ function openArt(art){
       ${hi?`<div class="aleg">${hi.split("").map(c=>`<span><i></i>${CUTN[c]}</span>`).join("")}</div><div class="atip">${esc(BEEFTIP[cut]||"")}</div>`
         :`<div class="atip">Welches Teilstück? Ergänze in der Einordnung nach "Rind" z. B. Suppenfleisch oder Gulasch, dann zeigt die App, wo es am Tier sitzt.</div>`}</div>`}
   const el=document.getElementById("adlg");
-  el.innerHTML=`<div class="ahead"><h3>${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
+  el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
       <button type="button" class="aclose" aria-label="Schließen">×</button></div>
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
-    ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}</div>`:`<p class="hint">Noch keine Einordnung. Tippe im Kassenbon auf den Artikel, um sie festzulegen.</p>`}
+    ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
+    <div class="aed" hidden></div>
     ${cowCard}
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
+    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist"><tbody>${offs.map(o=>`<tr><td>${logo(o.retailer)} ${esc(sname(o.retailer))}</td><td>${esc(o.product)}${o.kind==="angebot"?' <span class="vb fu">Angebot</span>':""}</td><td class="bp">${eur(o.price)}<small>${eur(o.refPrice)}/${esc(o.unit)}</small></td></tr>`).join("")}</tbody></table>`:""}
     ${buys.length?`<div class="lbl">Eure Käufe</div><table class="ahist"><tbody>${buys.map(z=>`<tr><td>${esc(dd(z.datum))}</td><td>${esc(sname(z.laden))}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>`:""}`;
-  const ov=document.getElementById("aovl");ov.hidden=false;el.querySelector(".aclose").onclick=()=>{ov.hidden=true}}
+  const ov=document.getElementById("aovl");ov.hidden=false;el.querySelector(".aclose").onclick=()=>{ov.hidden=true};
+  // Einordnung, Kategorien und für wen direkt hier ändern
+  const box=el.querySelector(".aed");let pf=p.slice(),kats=new Set(i.kat&&i.kat.length?i.kat:katGuess(art,"")),fuer=i.fuer||"beide";
+  const paint=()=>{const own=new Set(Object.values(artinfo.map).flatMap(x=>x.kat||[]));
+    box.innerHTML=`<div class="bform bed"><div class="bext">
+      <div class="brow"><span class="lbl">Einordnung</span><span class="pf">${pfadEditor(pf)}</span></div>
+      <div class="brow"><span class="lbl">Für</span><span class="seg">${Object.keys(FUER).map(v=>`<button type="button" class="chip" data-fu="${v}" aria-pressed="${v===fuer}">${FUER[v]}</button>`).join("")}</span></div>
+      <div class="brow"><span class="lbl">Kategorien</span><span class="kc">${[...new Set([...KATS,...own,...kats])].map(k=>`<button type="button" class="chip${kats.has(k)?" on":""}" data-k="${esc(k)}">${esc(k)}</button>`).join("")}</span></div>
+      <div class="brow"><button type="button" class="asave">Speichern</button><small class="amsg"></small></div></div></div>`};
+  const openEd=()=>{box.hidden=false;paint();el.querySelectorAll(".aedit").forEach(b=>b.hidden=true)};
+  el.querySelectorAll(".aedit").forEach(b=>b.onclick=openEd);if(editing)openEd();
+  box.addEventListener("click",async e=>{const c=e.target.closest("button");if(!c)return;
+    if(c.dataset.pf!=null){if(c.dataset.pf==="-")pf.pop();else if(pf.length<6)pf.push(c.dataset.pf);paint();return}
+    if(c.dataset.fu){fuer=c.dataset.fu;paint();return}
+    if(c.dataset.k!=null){kats.has(c.dataset.k)?kats.delete(c.dataset.k):kats.add(c.dataset.k);paint();return}
+    if(c.classList.contains("asave")){c.disabled=true;box.querySelector(".amsg").textContent="wird gespeichert …";
+      const info={kat:[...kats].slice(0,8),fuer,ver:i.ver||"",pfad:pf.slice(0,6)};
+      const ok=await window.MK_ART.set({artikel:art,kategorien:info.kat,fuer:info.fuer,verarbeitung:info.ver,pfad:info.pfad}).catch(()=>false);
+      if(ok){artinfo.map[art]=info;openArt(art);if(typeof render==="function")render()}else{c.disabled=false;box.querySelector(".amsg").textContent="Speichern hat nicht geklappt."}}});
+  box.addEventListener("keydown",e=>{const pi=e.target.closest(".pfin");if(!pi||e.key!=="Enter")return;e.preventDefault();const v=pi.value.trim().replace(/>/g,"").slice(0,30);
+    if(v&&pf.length<6){pf.push(v);paint();const n=box.querySelector(".pfin");if(n)n.focus()}});
+}
 (function wireArt(){const ov=document.getElementById("aovl");if(!ov)return;ov.addEventListener("click",e=>{if(e.target===ov)ov.hidden=true});
-  const go=e=>{const a=e.target.closest(".aopen");if(!a||e.target.closest(".bset,.vleer"))return;if(e.type==="keydown"&&e.key!=="Enter")return;e.preventDefault();openArt(a.dataset.art)};
-  document.addEventListener("click",go);document.addEventListener("keydown",go)})();
+  const go=e=>{if(!artinfo.on)return;const a=e.target.closest(".aopen");if(!a||!a.dataset.art||e.target.closest(".bset,.vleer,.addb"))return;e.preventDefault();e.stopPropagation();openArt(a.dataset.art)};
+  document.addEventListener("click",go,true)})();

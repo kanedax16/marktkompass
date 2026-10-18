@@ -434,7 +434,8 @@ button.part.bset{border:1px solid var(--line);border-radius:999px;padding:0 7px;
 .bform .bext .pfx{border:0;background:none;color:inherit;padding:0 0 0 4px;font-weight:700}
 .bform .bext .pfk{border-style:dashed;color:var(--muted)}
 .bform .bext .pfin{font-size:16px;flex:1 1 120px;min-width:0}
-.aopen{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.artok .aopen{cursor:pointer}
+.artok span.aopen,.artok div.aopen{text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:3px}
 .adlg{gap:8px}
 .ahead{display:flex;align-items:flex-start;gap:8px}.ahead h3{flex:1;min-width:0}
 .aclose{font:inherit;font-size:20px;line-height:1;background:none;border:0;color:var(--muted);cursor:pointer;padding:0 4px}
@@ -451,3 +452,8 @@ table.ahist{width:100%;border-collapse:collapse;font-size:13px}
 table.ahist td{padding:4px 0;border-top:1px solid var(--line);vertical-align:top}
 table.ahist td.bp{text-align:right;white-space:nowrap}table.ahist td.bm{text-align:right;color:var(--muted);padding-right:8px;white-space:nowrap}
 table.ahist small{display:block;color:var(--muted);font-size:11px}
+.ahead .px{margin-top:2px}
+.aedit{font:inherit;font-size:12px;background:none;border:0;color:var(--best);font-weight:700;cursor:pointer;padding:0 4px;text-decoration:underline}
+.bform.bed{margin-top:0}.bform.bed .bext{margin-top:0}
+.bform .asave{font:inherit;font-size:13px;font-weight:700;padding:5px 14px;border-radius:6px;border:0;background:var(--fg);color:var(--bg);cursor:pointer}
+table.ahist .logo{height:14px;vertical-align:-2px}
