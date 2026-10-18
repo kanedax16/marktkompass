@@ -196,6 +196,7 @@ function render(){
   if(st.view==="pruef"){renderPruef();return}
   if(st.view==="essen"){renderEssen();return}
   if(st.view==="vorrat"){renderVorrat();return}
+  if(st.view==="spar"){if(window.renderSpar)renderSpar();return}
   const list=document.getElementById("list");
   if(!rows.length)return;
   const vis=rows.map(r=>({...r,st:status(r,now)})).filter(r=>{
@@ -403,9 +404,11 @@ function applyView(){
   if(st.view==="pruef"&&!(typeof pruef!=="undefined"&&pruef&&pruef.on))st.view="deals";
   if(st.view==="essen"&&!(typeof essen!=="undefined"&&essen&&essen.on))st.view="deals";
   if(st.view==="vorrat"&&!(typeof vorrat!=="undefined"&&vorrat&&vorrat.on))st.view="deals";
-  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",ess=st.view==="essen",vor=st.view==="vorrat",deals=!shop&&!sai&&!pro&&!pru&&!ess&&!vor;
+  if(st.view==="spar"&&!(typeof vorrat!=="undefined"&&vorrat&&vorrat.on))st.view="deals";
+  const spa=st.view==="spar";
+  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",ess=st.view==="essen",vor=st.view==="vorrat",deals=!shop&&!sai&&!pro&&!pru&&!ess&&!vor&&!spa;
   views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
-  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;document.getElementById("vorratv").hidden=!vor;
+  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;document.getElementById("vorratv").hidden=!vor;document.getElementById("sparv").hidden=!spa;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
 }
 
@@ -955,7 +958,7 @@ function stockItems(){
 function homeNote(n){if(!vorrat.on)return "";const a=normW(n);if(!a)return "";
   const it=stockItems().find(x=>normW(x.art||x.name)===a);return it?` · <span class="home">zu Hause seit ${esc(dShort(it.datum))}</span>`:""}
 async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[],tk:v.tk||{},ort:v.ort||{}};
-  document.getElementById("vorratbtn").hidden=false;if(lsGet("bpf_view","")==="vorrat")st.view="vorrat";render()}catch(e){}}
+  document.getElementById("vorratbtn").hidden=false;document.getElementById("sparbtn").hidden=false;const lv=lsGet("bpf_view","");if(lv==="vorrat"||lv==="spar")st.view=lv;render()}catch(e){}}
 async function saveVorrat(){if(!window.MK_VORRAT)return;
   // Alte Markierungen aufräumen, damit der Zustand klein bleibt
   const lim=isoDay(90);for(const [k,d] of Object.entries(vorrat.st.gone))if(d<lim)delete vorrat.st.gone[k];
@@ -1181,7 +1184,7 @@ const el=document.getElementById("adlg");
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
     <div class="aed" hidden></div>
-    ${/entenbrust|entenkeule/i.test(art)?`<p class="atip">Tipp: Eine ganze Ente ist pro Kilo etwa ein Drittel günstiger als Brust oder Keulen einzeln. Zerlegen, Teile einfrieren, aus den Resten Knusprige Ente im Pita machen.</p>`:""}
+    ${/entenbrust|entenkeule/i.test(art)?`<p class="atip">Spartipp: Eine ganze Ente ist etwa 30 % günstiger pro Kilo Fleisch als Brust oder Keulen einzeln, Karkasse und Fett gibt es gratis. Zerlegen, Teile einfrieren, aus den Resten Knusprige Ente im Pita machen. Mehr im Reiter Sparen.</p>`:""}
     ${cowCard}
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
     ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist"><tbody>${offs.map(o=>`<tr><td>${logo(o.retailer)} ${esc(sname(o.retailer))}</td><td>${esc(o.product)}${o.kind==="angebot"?' <span class="vb fu">Angebot</span>':""}</td><td class="bp">${eur(o.price)}<small>${eur(o.refPrice)}/${esc(o.unit)}</small></td></tr>`).join("")}</tbody></table>`:""}
