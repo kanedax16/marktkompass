@@ -510,3 +510,6 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .prow .wg{color:#a4461d;font-weight:600}
 .ahist.apr tr.best td{font-weight:600}
 .ahist.apr td{padding-right:8px}.ahist.apr td:first-child{white-space:nowrap}
+.ahist.apr td:first-child .logo{height:22px;max-width:70px;object-fit:contain;vertical-align:middle}
+.ahist.apr td.bp{text-align:right}.ahist.apr s{color:var(--muted);font-size:12px;margin-right:4px}
+.ahist.apr b.ang{color:#1f7a3a}.ahist.apr td.bp small{display:inline;margin-left:4px}

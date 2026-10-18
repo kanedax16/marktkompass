@@ -273,7 +273,7 @@ function elseMin(r){const now=new Date();
   if(!elseCache||elseCache.n!==rows.length||elseCache.t!==Math.floor(now/6e4)){const m={};
     for(const o of rows){if(!o.art||!(o.refPrice>0))continue;const s=status(o,now);if(s==="exp"||s==="soon"||!baseOk(o,now))continue;
       const k=o.art+"|"+o.unit;(m[k]=m[k]||[]).push(o)}elseCache={n:rows.length,t:Math.floor(now/6e4),m}}
-  let best=null;for(const o of elseCache.m[r.art+"|"+r.unit]||[])if(o.retailer!==r.retailer&&(!best||o.refPrice<best.refPrice))best=o;return best}
+  let best=null;for(const o of elseCache.m[r.art+"|"+r.unit]||[])if(o.offerId!==r.offerId&&(!best||o.refPrice<best.refPrice))best=o;return best}
 function steals(vis){
   const by={};vis.forEach(r=>{const k=r.art+"|"+r.unit;(by[k]=by[k]||[]).push(r)});
   // Üblicher Marktpreis je Artikel: Median der Dauer- und Normalpreise aus allen Läden (mindestens 3 Werte)
@@ -574,7 +574,7 @@ function renderProsp(now){
       ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
         <div class="prow${oneDay(r)?" oneday":""}"><img class="px aopen" src="${icon(r.art,r.grp)}" alt="" data-art="${esc(r.art||r.product)}">
           <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${esc(r.product)}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
-            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}${(()=>{const o=r.art&&elseMin(r);return o&&o.refPrice<r.refPrice*0.995?` · <span class="wg">woanders günstiger: ${esc(sname(o.retailer))} ${eur(o.refPrice)}</span>`:""})()}</div></div>
+            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}${(()=>{const o=r.art&&elseMin(r);return o&&o.refPrice<r.refPrice*0.995?` · <span class="wg">${o.retailer===r.retailer?`hier ohne Angebot günstiger: ${eur(o.refPrice)}`:`woanders günstiger: ${esc(sname(o.retailer))} ${eur(o.refPrice)}`}</span>`:""})()}</div></div>
           ${s>=.05?`<span class="pct">−${Math.round(s*100)} %</span>`:""}
           <strong class="pp">${eur(r.price)}</strong>
           <button type="button" class="addb" data-art="${esc(r.art||r.product)}" data-u="${esc(r.unit)}" aria-label="${esc(r.art||r.product)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button></div>`).join("")).join("")}
@@ -1201,7 +1201,13 @@ function cowSvg(hi){const {w,h,px}=COW;const at=(x,y)=>x<0||y<0||x>=w||y>=h?".":
 // Artikelansicht: Einordnung, Herkunft am Tier, Preisverlauf aus euren Bons
 function openArt(art,editing){
   const i=artinfo.map[art]||{};const p=i.pfad&&i.pfad.length?i.pfad:pathGuess(art,"");
-  const now=new Date();const offs=(typeof rows!=="undefined"?rows:[]).filter(r=>r.art===art&&r.refPrice!=null&&status(r,now)!=="exp"&&baseOk(r,now)).sort((a,b)=>a.refPrice-b.refPrice).slice(0,8);
+  const now=new Date();const offs0=(typeof rows!=="undefined"?rows:[]).filter(r=>r.art===art&&r.refPrice!=null&&status(r,now)!=="exp"&&baseOk(r,now)).sort((a,b)=>a.refPrice-b.refPrice);
+  // Eine Zeile je Laden: Angebot mit dem normalen Preis als Streichpreis, sonst der normale Preis
+  const per={};for(const r of offs0){const k=r.retailer;const o=per[k]=per[k]||{retailer:k,unit:r.unit};
+    if(r.kind==="angebot"){if(!o.off||r.refPrice<o.off.refPrice)o.off=r}else if(!o.reg||r.refPrice<o.reg.refPrice)o.reg=r}
+  const offs=Object.values(per).map(o=>{const off=o.off,reg=o.reg;
+    if(off&&(!reg||off.refPrice<reg.refPrice)){const st0=reg?reg.refPrice:off.oldPrice&&off.price>0?off.oldPrice*off.refPrice/off.price:null;return {retailer:o.retailer,unit:off.unit,p:off.refPrice,strike:st0&&st0>off.refPrice?st0:null}}
+    return {retailer:o.retailer,unit:reg.unit,p:reg.refPrice,strike:null}}).sort((a,b)=>a.p-b.p).slice(0,8);
   const buys=[];for(const b of bons.list||[])for(const z of b.zeilen)if(z.artikel===art&&z.typ==="ware")buys.push({...z,laden:b.laden,datum:b.datum});
   buys.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
   const last=buys[0],v=(last&&last.verarbeitung)||i.ver||"";
@@ -1221,7 +1227,7 @@ const el=document.getElementById("adlg");
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
     <div class="aed" hidden></div>
-    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist apr"><tbody>${offs.map((o,j)=>`<tr${j===0?' class="best"':""}><td>${logo(o.retailer)} ${esc(sname(o.retailer))}</td><td>${esc(o.product)}${o.kind==="angebot"?' <span class="vb fu">Angebot</span>':""}${j===0&&offs.length>1?' <span class="vb v-un">am günstigsten</span>':""}</td><td class="bp">${eur(o.price)}<small>${eur(o.refPrice)}/${esc(UNIT[o.unit]||o.unit)}</small></td></tr>`).join("")}</tbody></table>`:`<p class="hint">Gerade kein Preis in euren Läden.</p>`}
+    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist apr"><tbody>${offs.map((o,j)=>`<tr${j===0?' class="best"':""}><td>${LOGOS[o.retailer]?`<img class="logo" src="${LOGOS[o.retailer]}" alt="${esc(sname(o.retailer))}" title="${esc(sname(o.retailer))}">`:esc(sname(o.retailer))}</td><td class="bp">${o.strike?`<s>${eur(o.strike)}</s> `:""}<b${o.strike?' class="ang"':""}>${eur(o.p)}</b>${o.unit!=="Stk"?`<small>je ${esc(UNIT[o.unit]||o.unit)}</small>`:""}</td></tr>`).join("")}</tbody></table>`:`<p class="hint">Gerade kein Preis in euren Läden.</p>`}
     ${/entenbrust|entenkeule/i.test(art)?`<p class="atip">Spartipp: Eine ganze Ente ist etwa 30 % günstiger pro Kilo Fleisch als Brust oder Keulen einzeln, Karkasse und Fett gibt es gratis. Zerlegen, Teile einfrieren, aus den Resten Knusprige Ente im Pita machen. Mehr im Reiter Sparen.</p>`:""}
     ${cowCard}
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
