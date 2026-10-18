@@ -56,6 +56,7 @@ function stake(o){const g=new Grid();ground(g);g.rect(31,4,2,38,K.post);
   [[24,10],[40,14],[23,20],[41,24],[24,30],[40,34],[30,6]].forEach(([x,y],i)=>g.ell(x,y,6,3,leafy));
   const F=o.fruits||[[26,15],[37,19],[27,25],[38,29],[28,35]];
   F.forEach(([x,y])=>{if(o.shape==="block"){g.ell(x,y,2.5,3,o.fruit,1);g.set(x,y-3,K.leafD)}else if(o.shape==="long"){g.ell(x,y+1,1.8,4,o.fruit,1);g.rect(x-1,y-3,3,1,K.leafD)}
+    else if(o.shape==="small"){[[0,0],[3,1],[-3,1],[1,3],[-2,4],[2,5]].forEach(([dx,dy])=>{g.ell(x+dx,y+dy,1.3,1.3,o.fruit,1)});g.line(x-3,y-1,x+3,y-1,K.leafD)}
     else if(o.shape==="chili"){g.line(x,y-2,x+1,y+4,o.fruit,1,1.6)}else{g.ell(x,y,2.4,2.2,o.fruit,1);g.set(x,y-2,K.leafD)}});return g}
 function climb(o){const g=new Grid();ground(g);g.rect(12,4,2,38,K.post);g.rect(50,4,2,38,K.post);[8,18,28].forEach(y=>g.line(13,y,51,y,K.wire));
   for(let x=16;x<50;x+=6){const y=[8,18,28][(x/6|0)%3];g.line(x,42,x+2,y,K.leaf,0,1.6)}
@@ -166,6 +167,7 @@ function cowArt(hi,o){if(typeof COW==="undefined")return null;const g=new Grid()
 const P=(re,make,iss,fakt)=>({re,make,iss,fakt});
 const L=[
  P(/granatapfel/,()=>tree({fruit:"#c0263a",n:7,r:2}),"die Kerne","Gegessen werden die saftigen Samenmäntel, die jeden Kern umhüllen."),
+ P(/cherry|cocktailtomate|snacktomate|kirschtomate|datteltomate|mini ?roma|minirispen/,()=>stake({fruit:"#e03a2a",shape:"small"}),"die Früchte","Kleine Tomaten wie Cherry- oder Cocktailtomaten wachsen in langen Rispen und sind meist süßer als große Sorten."),
  P(/tomate/,()=>stake({fruit:"#e03a2a"}),"die Früchte","Tomaten sind botanisch Beeren und gehören zu den Nachtschattengewächsen wie Kartoffeln."),
  P(/apfel|äpfel/,()=>tree({fruit:"#d9412b"}),"die Frucht","Ein Apfelbaum trägt erst nach einigen Jahren. Fast alle Sorten werden veredelt, weil Apfelkerne keine sortenechten Bäume ergeben."),
  P(/birne/,()=>tree({fruit:"#c9c23a",shape:"pear"}),"die Frucht","Birnen reifen nach der Ernte nach und werden deshalb oft noch hart gepflückt."),
@@ -196,6 +198,8 @@ const L=[
  P(/gurke/,()=>climb({fruit:"#4f8a32",shape:"cuke"}),"die Früchte","Gurken klettern mit Ranken und sind botanisch Beeren, wie Kürbisse."),
  P(/zucchini/,()=>sprawl({fruit:"#3f7a2a",shape:"zucchini"}),"die Früchte","Zucchini sind Kürbisse, die jung geerntet werden. Auch die Blüten sind essbar."),
  P(/kürbis|hokkaido|butternut/,()=>sprawl({fruit:"#e8792a",rib:"#c95f1a",r:9}),"die Frucht","Ein Kürbis ist eine Panzerbeere und eine der größten Beeren überhaupt."),
+ P(/kidney|schwarze bohne|weiße bohne|borlotti/,()=>legume({col:"#8a2a2a",round:true}),"die Samen","Kidneybohnen sind reife, getrocknete Bohnensamen. Getrocknet müssen sie eingeweicht und gut durchgekocht werden."),
+ P(/pistazie/,()=>tree({fruit:"#c9a0a0",n:12,r:1.1}),"der Kern","Pistazien wachsen in Trauben am Baum. Reif platzt die harte Schale von selbst einen Spalt weit auf."),
  P(/bohne(?!n ?(im|aus))|fisole|stangenbohne|buschbohne/,()=>climb({fruit:"#5a9a3a",shape:"pod",n:8}),"die Hülsen","Grüne Bohnen sind unreife Hülsen. Roh sind sie giftig, erst Kochen macht sie bekömmlich."),
  P(/kichererbse/,()=>legume({col:"#c9b27a",round:true}),"die Samen","In jeder Hülse stecken meist nur ein bis zwei Kichererbsen."),
  P(/erbse/,()=>climb({fruit:"#6fb04a",shape:"pod",n:8}),"die Samen","Erbsen sind die Samen in der Hülse. Zuckerschoten isst man samt Hülse."),
