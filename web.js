@@ -108,7 +108,8 @@
   window.MK_BON={
     get:async()=>{const d=await fetchData();return d?(d.bons||[]):null},
     add:async foto=>post({t:"bon",foto}),
-    del:async id=>{const r=await post({t:"bon_del",id});return !!(r&&r.ok)}
+    del:async id=>{const r=await post({t:"bon_del",id});return !!(r&&r.ok)},
+    assign:async o=>{const r=await post({t:"bonzeile",...o});return !!(r&&r.ok)}
   };
 
   // Vorrat: gemeinsamer Zustand (leer markiert, von Hand ergänzt)

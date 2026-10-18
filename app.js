@@ -858,7 +858,7 @@ function drawBons(){
   el.innerHTML=bons.list.map(b=>{const ware=b.zeilen.filter(z=>z.typ==="ware");const zu=ware.filter(z=>z.artikel).length;
     const [Y,M,D]=String(b.datum).split("-");
     return `<details class="bon"><summary>${logo(b.laden)}<span class="bmeta"><strong>${esc(sname(b.laden))}</strong> ${esc(D+"."+M+"."+Y)}${b.filiale?` <small>${esc(b.filiale)}</small>`:""}</span><span class="bsum">${eur(b.summe)}</span><small class="bcnt">${ware.length} Artikel, ${zu} zugeordnet</small></summary>
-    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div>${esc(z.name||z.text)}</div>${z.artikel?`<span class="part">${esc(z.artikel)}</span>`:""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
+    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
     <div class="bfoot"><button type="button" class="bdel" data-id="${esc(b.id)}">Bon löschen</button></div></details>`}).join("");
 }
 function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
@@ -950,3 +950,26 @@ function renderVorrat(){
     const art=typeof artFor==="function"?artFor(v):"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0)});renderVorrat();saveVorrat()});
 })();
 initVorrat();
+
+// Bonzeilen zuordnen: vorhandenen Artikel wählen oder (nur Besitzer) neuen Artikel mit Gruppe anlegen
+function knownArts(){return new Set([...document.querySelectorAll("#artlist option")].map(o=>o.value))}
+function assignForm(btn){
+  const b=bons.list.find(x=>String(x.id)===btn.dataset.b);const z=b&&b.zeilen.find(x=>String(x.id)===btn.dataset.z);if(!z)return;
+  const td=btn.closest("td");if(td.querySelector(".bform"))return;
+  const owner=(typeof essen!=="undefined"&&essen.role==="owner")||!!window.MK_PRUEF&&typeof pruef!=="undefined"&&pruef.on;
+  const f=document.createElement("form");f.className="bform";
+  f.innerHTML=`<input list="artlist" placeholder="Artikel wählen${owner?" oder neu eingeben":""}" value="${esc(z.artikel||"")}" aria-label="Artikel">
+    <select hidden aria-label="Gruppe für neuen Artikel">${GROUPS.map(g=>`<option${g==="Vorrat"?" selected":""}>${esc(g)}</option>`).join("")}</select>
+    <button type="submit">OK</button><button type="button" class="bx">×</button><small class="bmsg"></small>`;
+  td.appendChild(f);const inp=f.querySelector("input"),sel=f.querySelector("select"),msg=f.querySelector(".bmsg");inp.focus();inp.select();
+  const upd=()=>{const v=inp.value.trim();const neu=v&&!knownArts().has(v);sel.hidden=!(neu&&owner);msg.textContent=neu?(owner?"Neuer Artikel, wähle die Gruppe":"Bitte einen Artikel aus der Liste wählen"):""};
+  inp.oninput=upd;upd();
+  f.querySelector(".bx").onclick=()=>f.remove();
+  f.onsubmit=async e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const neu=!knownArts().has(v);if(neu&&!owner){upd();return}
+    f.querySelectorAll("button,input,select").forEach(x=>x.disabled=true);msg.textContent="wird gespeichert …";
+    const ok=await window.MK_BON.assign({id:z.id,artikel:v,neu,gruppe:sel.value,text:z.text,laden:b.laden,einheit:z.einheit,beispiel:`${z.name||z.text} (${sname(b.laden)}) ${eur(z.preis)}`}).catch(()=>false);
+    if(ok){z.artikel=v;drawBons();const d=[...document.querySelectorAll("details.bon")].find(x=>x.querySelector(`[data-b="${b.id}"]`));if(d)d.open=true;
+      if(neu){const o=document.createElement("option");o.value=v;document.getElementById("artlist").appendChild(o)}}
+    else{f.querySelectorAll("button,input,select").forEach(x=>x.disabled=false);msg.textContent="Speichern hat nicht geklappt."}};
+}
+document.getElementById("bons")&&document.getElementById("bons").addEventListener("click",e=>{const b=e.target.closest(".bset");if(b){e.preventDefault();assignForm(b)}});

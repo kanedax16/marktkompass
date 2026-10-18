@@ -384,3 +384,13 @@ table.bz tr.bx td{color:var(--muted)}
 .vadd button{font:inherit;font-weight:700;width:38px;border-radius:8px;border:0;background:var(--fg);color:var(--bg);cursor:pointer}
 .home{color:var(--best);font-weight:600}
 .videa{padding:8px 10px;border-top:1px solid var(--line);font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.videa small{color:var(--muted)}
+.bset{font:inherit;font-size:12px;cursor:pointer}
+button.part.bset{border:1px solid var(--line);border-radius:999px;padding:0 7px;background:var(--soft);color:var(--fg)}
+.bset.bnone{background:none;border:1px dashed var(--muted);border-radius:999px;padding:0 8px;color:var(--muted)}
+.bform{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;align-items:center}
+.bform input{font:inherit;font-size:16px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;min-width:0;flex:1 1 160px;background:var(--bg);color:var(--fg)}
+.bform select{font:inherit;font-size:13px;padding:3px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.bform button{font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;border:0;background:var(--fg);color:var(--bg);cursor:pointer}
+.bform .bx{background:none;color:var(--muted);border:1px solid var(--line)}
+.bmsg{width:100%;color:var(--muted)}
+.bform input{flex:1 1 110px}table.bz td:first-child{width:100%}
