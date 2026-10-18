@@ -93,7 +93,10 @@ function shopHtml(o){
 
 // Suche
 const qEl=document.getElementById("q");
-qEl.addEventListener("input",()=>{st.q=qEl.value.trim().toLowerCase();render();scheduleCount()});
+// Suche auch nach Artikelnummer: "23" oder "#23" findet den Artikel mit dieser Nummer
+const nrArt=n=>{const m=window.ARTNR||{};for(const k in m)if(m[k]===n)return k;return ""};
+const artNr=a=>(window.ARTNR||{})[a];
+qEl.addEventListener("input",()=>{const v=qEl.value.trim();const mm=v.match(/^#?(\d{1,4})$/);const a=mm?nrArt(+mm[1]):"";st.q=(a||v).toLowerCase();render();scheduleCount()});
 
 // Schnellsuche: zählt, welche Artikel du wirklich suchst (dauerhaft je Person gespeichert)
 const QKEY="bpf_qcount";
@@ -1260,7 +1263,7 @@ function openArt(art,editing){
       ${h.iss?`<div class="aleg"><span><i class="${h.plant?"ring":""}"></i>Das isst du: ${esc(h.iss)}</span></div>`:h.needCut?`<div class="atip">Welches Stück? Ergänze in der Einordnung z. B. Brust, Keule oder Bauch, dann zeigt die App, wo es sitzt.</div>`:""}
       ${h.fakt?`<div class="atip">${esc(h.fakt)}</div>`:""}</div>`}
 const el=document.getElementById("adlg");
-  el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
+  el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${artNr(art)?`<span class="anr">Nr. ${artNr(art)}</span> `:""}${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
       <button type="button" class="aclose" aria-label="Schließen">×</button></div>
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
