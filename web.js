@@ -101,7 +101,8 @@
   window.MK_ESSEN={
     get:async()=>{const d=await fetchData();return d&&d.role==="owner"?{meals:d.meals||[],role:d.role}:null},
     add:async o=>{const r=await post({t:"essen",...o});return r&&r.ok?r.meal:null},
-    del:async id=>{const r=await post({t:"essen_del",id});return !!(r&&r.ok)}
+    del:async id=>{const r=await post({t:"essen_del",id});return !!(r&&r.ok)},
+    upd:async o=>{const r=await post({t:"essen_upd",...o});return !!(r&&r.ok)}
   };
 
   // Kassenbons: beide Links dürfen fotografieren

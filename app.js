@@ -858,6 +858,17 @@ function knownDishes(){
 }
 function dayLabel(iso){const t=isoDay(0),y=isoDay(1);if(iso===t)return "Heute";if(iso===y)return "Gestern";
   const [Y,M,D]=String(iso).split("-").map(Number);return new Date(Y,M-1,D).toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}
+// Bewertung je Person: wer hat gegessen, Sterne 0,5 bis 5 (gleichen Stern nochmal tippen = halber Stern weniger)
+const WER={beide:"Beide",p1:"Person 1",p2:"Person 2"};
+const stTxt=v=>String(v).replace(".",",")+" ★";
+function rateHtml(m){const s=m.sterne||{},wer=m.wer||"";const ps=wer==="p1"?["p1"]:wer==="p2"?["p2"]:["p1","p2"];
+  const sum=ps.filter(p=>s[p]).map(p=>`${WER[p]}: ${stTxt(s[p])}`).join(" · ");
+  const ed=essen.rate&&essen.rate.id===m.id;
+  if(!ed)return `<div class="erate">${wer&&wer!=="beide"?`<span class="ewer">nur ${WER[wer]}</span>`:""}${sum?`<span class="est">${esc(sum)}</span>`:""}<button type="button" class="erb" data-id="${esc(m.id)}">${sum||wer?"ändern":"Bewerten"}</button></div>`;
+  const r=essen.rate,eps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];
+  return `<div class="ered"><div class="erow"><span class="lbl">Gegessen von</span>${Object.keys(WER).map(k=>`<button type="button" class="chip" data-rw="${k}" aria-pressed="${r.wer===k}">${WER[k]}</button>`).join("")}</div>
+    ${eps.map(p=>`<div class="erow"><span class="lbl">${WER[p]}</span><span class="stars">${[1,2,3,4,5].map(n=>{const v=r.s[p]||0;return `<button type="button" class="sb${v>=n?" on":v>=n-.5?" half":""}" data-sp="${p}" data-sn="${n}" aria-label="${n} Sterne">★</button>`}).join("")}</span><small>${r.s[p]?stTxt(r.s[p]):""}</small></div>`).join("")}
+    <div class="erow"><button type="button" class="sbtn" data-rsave="1">Speichern</button><button type="button" class="sbtn ghost" data-rx="1">Abbrechen</button><small class="ermsg"></small></div></div>`}
 function renderEssen(){
   const el=document.getElementById("essen");const ms=essen.meals;
   // Was ihr mögt: oft und gern gegessen, und was nicht ankommt
@@ -868,7 +879,7 @@ function renderEssen(){
   const who=m=>m.rolle===essen.role?"du":"Mitbewohner:in";
   el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Tragt ein, was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
   ${fav.length||nope.length?`<section class="elike">${fav.length?`<div><h3>Gern gegessen</h3><div class="echips">${fav.map(([n,o])=>`<button type="button" class="chip" data-quick="${esc(n)}">${esc(n)}${o.g>1?` <small>${o.g}×</small>`:""}</button>`).join("")}</div></div>`:""}${nope.length?`<div><h3>Kommt nicht so an</h3><div class="echips">${nope.map(([n])=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div>`:""}</section>`:""}
-  <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,who(m),m.zutaten].filter(Boolean).join(" · "))}</div>${m.rezept||m.warum?`<details class="erez"><summary>Rezept und warum es schmeckt</summary>${m.rezept?`<div class="ert">${esc(m.rezept)}</div>`:""}${m.warum?`<div class="ewh"><strong>Warum lecker:</strong> ${esc(m.warum)}</div>`:""}</details>`:""}</div>${m.urteil?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
+  <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,m.wer?"":who(m),m.zutaten].filter(Boolean).join(" · "))}</div>${rateHtml(m)}${m.rezept||m.warum?`<details class="erez"><summary>Rezept und warum es schmeckt</summary>${m.rezept?`<div class="ert">${esc(m.rezept)}</div>`:""}${m.warum?`<div class="ewh"><strong>Warum lecker:</strong> ${esc(m.warum)}</div>`:""}</details>`:""}</div>${m.urteil?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
 }
 function openEssen(pre){
   essen.sel={dish:pre||"",urteil:"",mahlzeit:mzNow(),tag:0,foto:""};
@@ -892,6 +903,17 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
   el.addEventListener("click",async e=>{
     if(e.target.closest("#enew")){openEssen("");return}
     const q=e.target.closest("[data-quick]");if(q){openEssen(q.dataset.quick);return}
+    const rb=e.target.closest(".erb");if(rb){const m=essen.meals.find(x=>String(x.id)===rb.dataset.id);if(!m)return;
+      essen.rate={id:m.id,wer:m.wer||"beide",s:{...(m.sterne||{})}};renderEssen();return}
+    if(essen.rate&&e.target.closest(".ered")){const r=essen.rate;let b;
+      if(b=e.target.closest("[data-rw]")){r.wer=b.dataset.rw;renderEssen();return}
+      if(b=e.target.closest("[data-sp]")){const p=b.dataset.sp,n=+b.dataset.sn;r.s[p]=r.s[p]===n?n-.5:n;if(r.s[p]<.5)delete r.s[p];renderEssen();return}
+      if(e.target.closest("[data-rx]")){essen.rate=null;renderEssen();return}
+      if(b=e.target.closest("[data-rsave]")){b.disabled=true;const ps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];const s={};for(const p of ps)if(r.s[p])s[p]=r.s[p];
+        const ok=await window.MK_ESSEN.upd({id:r.id,wer:r.wer,sterne:s}).catch(()=>false);
+        if(ok){const m=essen.meals.find(x=>x.id===r.id);if(m){m.wer=r.wer;m.sterne=s}essen.rate=null;renderEssen()}
+        else{b.disabled=false;const msg=el.querySelector(".ermsg");if(msg)msg.textContent="Speichern hat nicht geklappt."}}
+      return}
     const d=e.target.closest(".edel");if(d){
       if(d.dataset.arm!=="1"){d.dataset.arm="1";d.textContent="löschen?";setTimeout(()=>{d.dataset.arm="";d.textContent="×"},3000);return}
       const id=+d.dataset.id;d.disabled=true;const ok=await window.MK_ESSEN.del(id).catch(()=>false);
