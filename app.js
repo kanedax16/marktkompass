@@ -624,6 +624,7 @@ function initFeedback(db,id,owner){
   const open=()=>{ovl.hidden=false;info.textContent="";if(!owner)txt.focus()};
   btn.onclick=open;document.getElementById("fbclose").onclick=()=>{ovl.hidden=true};
   ovl.addEventListener("click",e=>{if(e.target===ovl)ovl.hidden=true});
+  if(owner&&window.MK_FB){webFeedbackOwner(btn,ovl,badge,list,info,txt);return}
   if(owner){
     document.getElementById("fbtitle").textContent="Feedback aus dem Haushalt";
     document.getElementById("fbwrite").hidden=true;document.getElementById("fbsend").hidden=true;list.hidden=false;
@@ -640,6 +641,42 @@ function initFeedback(db,id,owner){
       catch(err){info.textContent="Senden hat nicht geklappt."}
       sb.disabled=false};
   }
+}
+// Feedback im Besitzer-Link: selbst schreiben, abhaken, KI-Stand sehen, auf Rückfragen der KI antworten
+function webFeedbackOwner(btn,ovl,badge,list,info,txt){
+  const F=window.MK_FB;let items=[];
+  document.getElementById("fbtitle").textContent="Feedback und Wünsche";
+  document.querySelector("#fbwrite .hint").textContent="Was fehlt, was stört? Die KI schaut zweimal am Tag drauf, setzt es um oder fragt nach. Umgesetztes hakst du ab.";
+  txt.placeholder="z. B. Spinat in der Artikelliste ergänzen";txt.rows=3;list.hidden=false;
+  const ST={offen:"Neu, die KI kümmert sich",arbeitet:"KI arbeitet daran",umgesetzt:"Umgesetzt, bitte prüfen",rueckfrage:"Rückfrage der KI",erledigt:"Erledigt"};
+  const dt=a=>{try{return new Date(a).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch(e){return ""}};
+  const card=x=>{const s=x.done?"erledigt":(ST[x.status]?x.status:"offen");
+    return `<div class="fbi st-${s}${x.done?" done":""}" data-id="${esc(x.id)}"><label class="fbchk" title="${x.done?"Wieder öffnen":"Abhaken"}"><input type="checkbox" ${x.done?"checked":""} aria-label="Erledigt"></label>
+      <div class="fbc"><div class="fbm">${esc(dt(x.at))} · ${x.rolle==="owner"?"von dir":"aus dem Haushalt"} · <span class="fbs">${ST[s]}</span></div><div class="fbt">${esc(x.text)}</div>
+      ${x.antwort?`<div class="fba"><strong>KI:</strong> ${esc(x.antwort)}</div>`:""}
+      ${s==="rueckfrage"?`<div class="fbr"><input placeholder="Deine Antwort an die KI" aria-label="Antwort an die KI"><button type="button" class="fbrs">Antworten</button></div>`:""}</div></div>`};
+  const draw=()=>{const open=items.filter(x=>!x.done),done=items.filter(x=>x.done);
+    const need=open.filter(x=>x.status==="umgesetzt"||x.status==="rueckfrage").length;
+    badge.hidden=!open.length;badge.textContent=need||open.length;
+    list.innerHTML=(open.length?open.map(card).join(""):`<p class="hint">Nichts offen.</p>`)+(done.length?`<details class="fbdone"><summary>Erledigt (${done.length})</summary>${done.map(card).join("")}</details>`:"")};
+  const load=async force=>{try{const l=await F.get(force);if(l){items=l;draw()}}catch(e){}};
+  btn.hidden=false;
+  btn.onclick=()=>{ovl.hidden=false;info.textContent="";load(true)};
+  document.getElementById("fbclose").onclick=()=>{ovl.hidden=true};
+  ovl.addEventListener("click",e=>{if(e.target===ovl)ovl.hidden=true});
+  const upd=async(x,o,el)=>{el&&(el.disabled=true);const ok=await F.upd({id:x.id,...o}).catch(()=>false);
+    if(ok){Object.assign(x,o);if(o.text){x.status="offen";x.done=false}if(typeof o.done==="boolean")x.status=o.done?"erledigt":"offen";draw()}else{el&&(el.disabled=false);info.textContent="Speichern hat nicht geklappt."}};
+  list.addEventListener("change",e=>{const c=e.target.closest(".fbchk input");if(!c)return;const x=items.find(y=>String(y.id)===c.closest(".fbi").dataset.id);if(x)upd(x,{done:c.checked},c)});
+  const reply=b=>{const box=b.closest(".fbr"),inp=box.querySelector("input"),v=inp.value.trim();if(!v)return;const x=items.find(y=>String(y.id)===b.closest(".fbi").dataset.id);
+    if(x)upd(x,{text:x.text+"\n\nAntwort: "+v},b)};
+  list.addEventListener("click",e=>{const b=e.target.closest(".fbrs");if(b)reply(b)});
+  list.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest(".fbr")){e.preventDefault();reply(e.target.closest(".fbr").querySelector(".fbrs"))}});
+  document.getElementById("fbdlg").onsubmit=async e=>{e.preventDefault();const t=txt.value.trim();if(!t)return;
+    const sb=document.getElementById("fbsend");sb.disabled=true;info.textContent="wird gesendet";
+    const ok=await F.add(t.slice(0,2000)).catch(()=>false);
+    if(ok){txt.value="";info.textContent="Angekommen, die KI kümmert sich.";await load(true)}else info.textContent="Senden hat nicht geklappt.";
+    sb.disabled=false};
+  load(false);
 }
 // Schnappschuss der Angebote im gemeinsamen Speicher: du (mit n8n) legst ihn ab, der Haushalt liest ihn
 const SNAP_F=["offerId","grp","category","product","brand","retailer","description","price","oldPrice","refPrice","unit","loyalty","validFrom","validTo","loadedAt","usualRef","usualN","plz","kind","art","hist","regRef","ean","img"];

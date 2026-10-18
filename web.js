@@ -112,6 +112,13 @@
     assign:async o=>{const r=await post({t:"bonzeile",...o});return !!(r&&r.ok)}
   };
 
+  // Feedback im Besitzer-Link: lesen, selbst schreiben, abhaken, auf Rückfragen antworten
+  window.MK_FB={
+    get:async force=>{const d=await fetchData(force);return d&&d.role==="owner"?(d.feedback||[]):null},
+    add:async text=>{const r=await post({t:"feedback",text});return !!(r&&r.ok)},
+    upd:async o=>{const r=await post({t:"feedback_upd",...o});return !!(r&&r.ok)}
+  };
+
   // Artikel-Infos: Kategorien, für wen, Verarbeitung (nur Besitzer)
   window.MK_ART={
     get:async()=>{const d=await fetchData();return d&&d.role==="owner"?(d.artikelinfo||[]):null},

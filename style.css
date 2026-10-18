@@ -411,3 +411,18 @@ button.part.bset{border:1px solid var(--line);border-radius:999px;padding:0 7px;
 .bform .bext .kadd{padding:4px 12px}
 .vkat{display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;margin-bottom:4px;-webkit-overflow-scrolling:touch}
 .vkat .chip{font-size:12px;white-space:nowrap;flex:none}
+/* Feedback im Besitzer-Link */
+.fbi:has(.fbchk){grid-template-columns:auto minmax(0,1fr);align-items:start}
+.fbchk{grid-row:1;padding-top:2px;cursor:pointer}
+.fbchk input{width:20px;height:20px;accent-color:var(--best);margin:0}
+.fbc{min-width:0;display:flex;flex-direction:column;gap:3px}
+.fbs{font-weight:700}
+.st-umgesetzt{border-color:var(--best)}.st-umgesetzt .fbs{color:var(--best)}
+.st-rueckfrage{border-color:var(--warn)}.st-rueckfrage .fbs{color:var(--warn)}
+.st-arbeitet .fbs{color:var(--fg)}
+.fba{font-size:13px;background:var(--soft);border-radius:6px;padding:6px 8px;white-space:pre-wrap}
+.fbr{display:flex;gap:4px}
+.fbr input{flex:1;min-width:0;font:inherit;font-size:16px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.fbi .fbr button{grid-column:auto;grid-row:auto;font-weight:700;background:var(--fg);color:var(--bg);border:0}
+.fbdone summary{cursor:pointer;font-size:12px;color:var(--muted);padding:4px 0}
+.fbdone .fbi{margin-top:6px}
