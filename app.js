@@ -54,6 +54,11 @@ const KNOWN=new Set(ARTICLES.map(a=>a[0]));
 const st={q:"",grp:"Alle",app:true,soon:true,dauer:true,bio:false,stl:true,mine:false,off:new Set()};
 try{const s=JSON.parse(localStorage.getItem("bpf2")||"{}");if(s.off)st.off=new Set(s.off);for(const k of["app","soon","dauer","bio","stl","mine"])if(typeof s[k]==="boolean")st[k]=s[k]}catch(e){}
 // Bio-Läden: dort nur ausgewählte Lieblingsprodukte zeigen (im Menü änderbar, je Person gespeichert)
+// Angebote und Prospekte in einem Reiter (Besitzer): Ansicht nach Artikel oder nach Laden, Laden wählen = "Ich bin im Laden"
+st.amode=lsGetSafe("bpf_amode","artikel");st.laden=lsGetSafe("bpf_laden","");
+function lsGetSafe(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+const merged=()=>typeof vorrat!=="undefined"&&vorrat&&vorrat.on;
+const isProsp=()=>st.view==="prosp"||(merged()&&st.view==="deals"&&st.amode==="laden");
 const BIO_SHOPS=["Alnatura","denn's Biomarkt"];
 let pick={shops:{"Alnatura":true,"denn's Biomarkt":true},terms:["gläserne butter","voelkel kefir","voelkel kombucha"]};
 try{const s=JSON.parse(localStorage.getItem("bpf_auswahl")||"null");if(s&&s.shops&&Array.isArray(s.terms))pick=s}catch(e){}
@@ -192,7 +197,8 @@ function render(){
   applyView();
   if(st.view==="shop"){renderShop();return}
   if(st.view==="saison"){renderSaison();return}
-  if(st.view==="prosp"){renderProsp(now);return}
+  drawAmode();
+  if(isProsp()){renderProsp(now);return}
   if(st.view==="pruef"){renderPruef();return}
   if(st.view==="essen"){renderEssen();return}
   if(st.view==="vorrat"){renderVorrat();return}
@@ -405,8 +411,9 @@ function applyView(){
   if(st.view==="essen"&&!(typeof essen!=="undefined"&&essen&&essen.on))st.view="deals";
   if(st.view==="vorrat"&&!(typeof vorrat!=="undefined"&&vorrat&&vorrat.on))st.view="deals";
   if(st.view==="spar"&&!(typeof vorrat!=="undefined"&&vorrat&&vorrat.on))st.view="deals";
-  const spa=st.view==="spar";
-  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",ess=st.view==="essen",vor=st.view==="vorrat",deals=!shop&&!sai&&!pro&&!pru&&!ess&&!vor&&!spa;
+  if(merged()&&st.view==="prosp"){st.view="deals";st.amode="laden"}
+  const spa=st.view==="spar";const pb=document.querySelector('.views [data-v="prosp"]');if(pb)pb.hidden=merged();
+  const shop=st.view==="shop",sai=st.view==="saison",pro=isProsp(),pru=st.view==="pruef",ess=st.view==="essen",vor=st.view==="vorrat",deals=!shop&&!sai&&!pro&&!pru&&!ess&&!vor&&!spa&&st.view==="deals";
   views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
   document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;document.getElementById("vorratv").hidden=!vor;document.getElementById("sparv").hidden=!spa;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
@@ -518,6 +525,20 @@ function offerSave(r){
   const ref=r.regRef>r.refPrice?r.regRef:(r.usualRef&&r.usualN>=2&&r.usualRef>r.refPrice?r.usualRef:0);
   return ref?1-r.refPrice/ref:0;
 }
+function listHere(L){try{const l=buildList().filter(e=>!e.done);if(!l.length)return "";
+  const here=l.filter(e=>rows.some(r=>r.retailer===L&&r.art&&r.art===e.n));
+  return here.length?`<p class="hl">Von eurer Einkaufsliste gibt es hier: ${here.map(e=>esc(e.n)).join(", ")}</p>`:""}catch(e){return ""}}
+function drawAmode(){const el=document.getElementById("amode");if(!el)return;
+  const on=merged()&&(st.view==="deals"||st.view==="prosp");el.hidden=!on;if(!on)return;
+  const now=new Date();const cnt={};rows.forEach(r=>{if(r.kind==="angebot"&&status(r,now)!=="exp"&&!st.off.has(r.retailer))cnt[r.retailer]=(cnt[r.retailer]||0)+1});
+  const near=k=>{const f=fils.find(x=>x.retailer===k&&x.km!=null);return f?f.km:99};
+  const ls=Object.keys(cnt).sort((a,b)=>near(a)-near(b));
+  el.innerHTML=`<div class="aseg" role="group" aria-label="Ansicht"><button type="button" data-am="artikel" aria-pressed="${st.amode!=="laden"}">Bester Preis je Artikel</button><button type="button" data-am="laden" aria-pressed="${st.amode==="laden"}">Nach Laden</button></div>
+    ${st.amode==="laden"&&ls.length?`<div class="alad"><span class="lbl">Ich bin bei</span><button type="button" class="alg${!st.laden?" on":""}" data-ld="">Alle</button>${ls.map(k=>`<button type="button" class="alg${st.laden===k?" on":""}" data-ld="${esc(k)}" title="${esc(sname(k))}">${LOGOS[k]?`<img src="${LOGOS[k]}" alt="${esc(sname(k))}">`:esc(sname(k))}</button>`).join("")}</div>`:""}`}
+document.addEventListener("click",e=>{const a=e.target.closest("#amode [data-am],#amode [data-ld]");if(!a)return;
+  if(a.dataset.am){st.amode=a.dataset.am;try{localStorage.setItem("bpf_amode",JSON.stringify(st.amode))}catch(x){}}
+  else{st.laden=a.dataset.ld;try{localStorage.setItem("bpf_laden",JSON.stringify(st.laden))}catch(x){}}
+  render();window.scrollTo(0,0)});
 function renderProsp(now){
   const el=document.getElementById("prosp");
   if(!rows.length){el.innerHTML="";return}
@@ -525,12 +546,16 @@ function renderProsp(now){
     if(r.kind!=="angebot"||!baseOk(r,now))return false;if(st.grp!=="Alle"&&r.grp!==st.grp)return false;
     if(st.q){const h=clean(r.product+" "+r.brand+" "+r.description+" "+r.category+" "+r.art).toLowerCase();if(!h.includes(st.q)&&!(SYN[st.q]&&h.includes(SYN[st.q])))return false}
     return true});
+  const L=merged()?st.laden:"";
+  if(L&&offers.some(r=>r.retailer===L)){const mine=offers.filter(r=>r.retailer===L);offers.length=0;offers.push(...mine)}
   if(!offers.length){el.innerHTML=`<div class="empty">Gerade keine Angebote${st.q?` zu „${esc(st.q)}“`:""}. Neue Prospekte kommen jede Nacht um 3:07 Uhr.</div>`;return}
   const by={};offers.forEach(r=>(by[r.retailer]=by[r.retailer]||[]).push(r));
   const near=k=>{const f=fils.find(x=>x.retailer===k&&x.km!=null);return f?f.km:null};
   const stores=Object.keys(by).sort((a,b)=>((near(a)??99)-(near(b)??99))||by[b].length-by[a].length);
   const until=arr=>{const t=arr.map(r=>r.validTo).filter(Boolean).sort();return t.length?dfmt(new Date(t[t.length-1])):""};
-  el.innerHTML=`<p class="phead">${offers.length} Angebote in ${stores.length} Läden${st.grp!=="Alle"?" · "+esc(st.grp):""}, sortiert nach Entfernung ab Lokhalle</p>`+stores.map(k=>{
+  let hier="";if(L&&stores.length===1){let t=[];try{t=steals(offers)}catch(e){}
+    hier=`<div class="hier"><div class="hh">${logo(L)}<span>Du bist bei <b>${esc(sname(L))}</b>. Das lohnt sich hier am meisten:</span></div>${t.length?`<ol>${t.slice(0,6).map(x=>`<li><span class="aopen" data-art="${esc(x.r.art||x.r.product)}">${esc(x.r.product)}</span> <b>${eur(x.r.price)}</b> <span class="hpct">−${Math.round(x.d*100)} %</span> <small>${esc(x.why)}</small></li>`).join("")}</ol>`:`<p class="hint">Hier gerade kein besonders starkes Angebot, unten alles im Prospekt.</p>`}${listHere(L)}</div>`}
+  el.innerHTML=hier+`<p class="phead">${offers.length} Angebote in ${stores.length} ${stores.length===1?"Laden":"Läden"}${st.grp!=="Alle"?" · "+esc(st.grp):""}, sortiert nach Entfernung ab Lokhalle</p>`+stores.map(k=>{
     const arr=by[k],km=near(k);
     const grps=GROUPS.filter(g=>arr.some(r=>r.grp===g));
     return`<details class="pstore" open><summary>${logo(k)}<span class="psn">${esc(sname(k))}</span><span class="psm">${arr.length} ${arr.length===1?"Angebot":"Angebote"}${km!=null?" · "+kmTxt(km):""}${until(arr)?" · bis "+until(arr):""}</span></summary>
