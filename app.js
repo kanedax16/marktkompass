@@ -334,7 +334,7 @@ const SYNONYM=[[/\s*loup de mer\b/i,""],[/\s*dorade royale?\b/i," Dorade"],[/\bb
 const BIOWORT=/(\b(rewe|edeka|k|gut|aldi|lidl)[- ]?bio\b|\bbio\b-?|\böko\b-?)/gi;
 // "vegan" nur behalten, wo es einen Unterschied macht (Ersatzprodukte); bei Nüssen, Obst usw. ist es überflüssig
 const VEGAN_OK=/wurst|käse|kaese|schnitzel|burger|aufschnitt|hack|joghurt|milch|drink|frikadelle|nugget|filet|salami|schinken|butter|sahne|quark|bratling|gyros|döner|eis\b|mayo|aufstrich|pudding/i;
-function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(BIOWORT," ").replace(/\b(tiefgek(ü|ue)hlt|tiefk(ü|ue)hl(ware)?|tk)\b/gi," ");x=x.replace(/\bxxl\b/gi," ");if(!VEGAN_OK.test(x))x=x.replace(/\bvegane?[snr]?\b/gi," ");x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
+function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(BIOWORT," ").replace(/\b(tiefgek(ü|ue)hlt|tiefk(ü|ue)hl(ware)?|tk)\b/gi," ");x=x.replace(/\bxxl\b/gi," ");x=x.replace(/\b(laktose|lactose)frei(e[snr]?|e)?\b|\bohne laktose\b/gi," ");if(!VEGAN_OK.test(x))x=x.replace(/\bvegane?[snr]?\b/gi," ");x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
 function dispName(r){if(!r.art||!/^(Obst|Gemüse)$/.test(r.grp||""))return cleanName(r.product);
   if(/hokkaido/i.test(r.art)&&!SORTEN[0][1].test(r.product))return "Kürbis (Hokkaido)";
   const base=SING[r.art]||r.art,sv=SORTEN.find(([b])=>b===base);const m=sv&&String(r.product).match(sv[1]);
@@ -342,12 +342,13 @@ function dispName(r){if(!r.art||!/^(Obst|Gemüse)$/.test(r.grp||""))return clean
 const pn=r=>r.disp||r.product;
 // Tiefgekühlt erkennen; Bio und Tiefkühl erscheinen als kleine Zeichen direkt auf dem Bild
 const isTK=r=>/tiefk(ü|ue)hl|tiefgek(ü|ue)hlt|\btk\b|❄|gefroren|frost/i.test(`${r.product||""} ${r.category||""} ${r.art||""}`);
-const marks=r=>(isBio(r)?`<span class="ov ob" title="Bio">BIO</span>`:"")+(isTK(r)?`<span class="ov ot" title="Tiefgekühlt">❄</span>`:"");
+const isLF=r=>/laktosefrei|lactosefrei|ohne laktose/i.test(`${r.product||""} ${r.brand||""} ${r.description||""} ${r.art||""}`);
+const marks=r=>(isBio(r)?`<span class="ov ob" title="Bio">BIO</span>`:"")+(isTK(r)?`<span class="ov ot" title="Tiefgekühlt">❄</span>`:"")+(isLF(r)?`<span class="ov ol" title="Laktosefrei">L</span>`:"");
 const pxw=(img,r)=>{const o=marks(r);return o?`<span class="pxw">${img}${o}</span>`:img};
 // Favoriten (Stern) je Artikel, gemeinsam gespeichert in den Einstellungen
 const isFav=a=>!!a&&Array.isArray(pick.fav)&&pick.fav.includes(a);
 const favStar=a=>isFav(a)?`<span class="fstar" title="Favorit">★</span> `:"";
-function pills(o,img){let h="";if(!img&&isBio(o))h+=`<span class="pill bio">Bio</span>`;if(!img&&isTK(o))h+=`<span class="pill tk">❄ TK</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
+function pills(o,img){let h="";if(!img&&isBio(o))h+=`<span class="pill bio">Bio</span>`;if(!img&&isTK(o))h+=`<span class="pill tk">❄ TK</span>`;if(!img&&isLF(o))h+=`<span class="pill lf">L laktosefrei</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
 
 // ===== Einkaufen: gespeicherte Gerichte und Einkaufsliste =====
 const UNITS=["g","kg","Stk","ml","l","Bund","Pck"];

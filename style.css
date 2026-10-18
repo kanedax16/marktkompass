@@ -532,4 +532,6 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .pxw .ov{position:absolute;line-height:1;font-weight:800;pointer-events:none;border-radius:4px}
 .pxw .ob{left:-4px;bottom:-4px;background:#3f8a2c;color:#fff;font-size:8px;padding:2px 3px 1px;letter-spacing:.02em;border:1px solid #fff}
 .pxw .ot{right:-4px;top:-4px;background:#dbeefc;color:#1c6fb5;font-size:12px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #fff}
+.pxw .ol{right:-4px;bottom:-4px;background:#7b3fb0;color:#fff;font-size:10px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #fff}
+.pill.lf{background:#efe3f8;color:#6a2fa0;font-weight:700}
 .pill.tk{background:#dbeefc;color:#1c6fb5;font-weight:700}
