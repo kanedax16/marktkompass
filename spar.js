@@ -46,7 +46,7 @@ window.renderSpar=function(){
     ${bald.length?`<ul class="shl">${bald.slice(0,5).map(x=>`<li><span class="aopen" data-art="${esc(x.art||x.name)}">${esc(x.name)}</span> <small>bis ${esc(dShort(x.bis))}</small></li>`).join("")}</ul>`:""}
     ${reste.length?`<p class="shsub">Reste-Gerichte</p><ul class="shl">${reste.map(d=>`<li>${esc(d.name)} <small>aus ${esc(d.reste)}</small></li>`).join("")}</ul>`:""}
     <button type="button" class="sbtn" data-go="vorrat">Zum Vorrat</button>`)}
-  ${card("","4. Vorrat zum Tiefpreis","5 bis 10 %",`<p>Haltbares (Nüsse, Linsen, Öl, Haferflocken) und Einfrierbares (Fleisch, Fisch, Brot) kaufen, wenn es unter eurem üblichen Preis liegt. Nur so viel, wie in Kammer und Tiefkühler passt.</p>`)}
+  ${card("","4. Vorrat zum Tiefpreis","5 bis 10 %",`<p>Haltbares (Nüsse, Linsen, Haferflocken) und Einfrierbares (Fleisch, Fisch, Brot) kaufen, wenn es unter eurem üblichen Preis liegt. Nur so viel, wie in Kammer und Tiefkühler passt.</p>`)}
   ${card("","5. Richtiger Laden","5 bis 15 %",`<p>Pro Woche ein bis zwei Läden mit dem besten Gesamtpreis für eure Liste, ein Umweg nur, wenn er sich lohnt.</p>
     ${Object.keys(proL).length?`<p class="shsub">Diesen Monat</p><ul class="shl">${Object.entries(proL).sort((a,b)=>b[1]-a[1]).map(([l,s])=>`<li>${logo(l)} <b>${eur(s)}</b></li>`).join("")}</ul>`:""}`)}
   ${card("","6. Kundenkarten und Apps","1 bis 3 %",`<ul class="shl">${Object.entries(PROG).map(([l,[p,h]])=>`<li>${logo(l)} <b>${esc(p)}</b> <small>${esc(h)}</small></li>`).join("")}</ul><p>Erst die Karte scannen, dann mit der Trade Republic Karte zahlen. Beides zählt.</p>`)}
