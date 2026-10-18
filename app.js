@@ -972,6 +972,8 @@ function katGuess(art,name){const t=((art||"")+" "+(name||"")).toLowerCase();con
     "Obst":["Obst"],"Gemüse":["Gemüse"],"Getreide & Flocken":["Kohlenhydrate"],"Saaten & Öle":["Fette & Öle"],"Getränke":["Getränke"],"Vorrat":["Vorrat"]};
   for(const k of G[g]||[])s.add(k);
   if(/\beier\b|^eier/.test(t)){s.delete("Milchprodukte");s.add("tierisches Protein")}
+  if(/salsiccia|wurst|schinken|salami|speck|hack|hähnchen|huhn|pute|rind|schwein|lamm|steak|lachs|fisch|thunfisch|garnele|forelle/.test(t))s.add("tierisches Protein");
+  if(/joghurt|quark|skyr|kefir|käse|mozzarella|feta|milch|sahne|butter/.test(t))s.add("Milchprodukte");
   if(/tofu|tempeh|seitan|linsen|kichererbs|bohne|erbsen|edamame|lupine|soja/.test(t))s.add("pflanzliches Protein");
   if(/nudel|pasta|reis|kartoffel|brot|brötchen|couscous|bulgur|quinoa|gnocchi/.test(t))s.add("Kohlenhydrate");
   if(/tiefgek|\btk\b|tiefgefr/.test(t))s.add("Tiefkühl");
