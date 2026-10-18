@@ -426,3 +426,28 @@ button.part.bset{border:1px solid var(--line);border-radius:999px;padding:0 7px;
 .fbi .fbr button{grid-column:auto;grid-row:auto;font-weight:700;background:var(--fg);color:var(--bg);border:0}
 .fbdone summary{cursor:pointer;font-size:12px;color:var(--muted);padding:4px 0}
 .fbdone .fbi{margin-top:6px}
+/* Einordnung und Artikelansicht */
+.pf{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pfs{color:var(--muted);font-size:12px}
+.bform .bext .pfc{display:inline-flex;align-items:center;gap:2px;cursor:default}
+.bform .bext .pfc.last{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.bform .bext .pfx{border:0;background:none;color:inherit;padding:0 0 0 4px;font-weight:700}
+.bform .bext .pfk{border-style:dashed;color:var(--muted)}
+.bform .bext .pfin{font-size:16px;flex:1 1 120px;min-width:0}
+.aopen{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.adlg{gap:8px}
+.ahead{display:flex;align-items:flex-start;gap:8px}.ahead h3{flex:1;min-width:0}
+.aclose{font:inherit;font-size:20px;line-height:1;background:none;border:0;color:var(--muted);cursor:pointer;padding:0 4px}
+.adlg .meta{color:var(--muted);font-size:12px;margin-top:-4px}
+.adlg .crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.adlg .crumbs .chip{cursor:default}.adlg .crumbs .chip.last{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.acard{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--soft);display:flex;flex-direction:column;gap:6px}
+.cow{width:100%;max-width:440px;height:auto;align-self:center;image-rendering:pixelated}
+.aleg{display:flex;flex-wrap:wrap;gap:4px 12px}.aleg span{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600}
+.aleg i{width:10px;height:10px;background:#e0473a;box-shadow:0 0 0 1px #a8291f}
+.atip{font-size:13px}
+.akat{display:flex;flex-wrap:wrap;gap:4px}.akat .chip{font-size:12px;cursor:default}
+table.ahist{width:100%;border-collapse:collapse;font-size:13px}
+table.ahist td{padding:4px 0;border-top:1px solid var(--line);vertical-align:top}
+table.ahist td.bp{text-align:right;white-space:nowrap}table.ahist td.bm{text-align:right;color:var(--muted);padding-right:8px;white-space:nowrap}
+table.ahist small{display:block;color:var(--muted);font-size:11px}

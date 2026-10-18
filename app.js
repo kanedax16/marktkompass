@@ -895,7 +895,7 @@ function drawBons(){
   el.innerHTML=bons.list.map(b=>{const ware=b.zeilen.filter(z=>z.typ==="ware");const zu=ware.filter(z=>z.artikel).length;
     const [Y,M,D]=String(b.datum).split("-");
     return `<details class="bon"><summary>${logo(b.laden)}<span class="bmeta"><strong>${esc(sname(b.laden))}</strong> ${esc(D+"."+M+"."+Y)}${b.filiale?` <small>${esc(b.filiale)}</small>`:""}</span><span class="bsum">${eur(b.summe)}</span><small class="bcnt">${ware.length} Artikel, ${zu} zugeordnet</small></summary>
-    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
+    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div${artinfo.on&&z.artikel?` class="aopen" data-art="${esc(z.artikel)}" role="button" tabindex="0"`:""}>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
     <div class="bfoot"><button type="button" class="bdel" data-id="${esc(b.id)}">Bon löschen</button></div></details>`}).join("");
 }
 function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
@@ -974,7 +974,7 @@ function renderVorrat(){
   const present=artinfo.on?[...new Set(all.flatMap(x=>katsOf(x.art)))].sort((a,b)=>a.localeCompare(b,"de")):[];
   if(!present.includes(vorrat.kat))vorrat.kat="";
   const its=vorrat.kat?all.filter(x=>katsOf(x.art).includes(vorrat.kat)):all,bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
-  const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn">${esc(x.name)}${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
+  const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn${artinfo.on&&x.art?" aopen":""}"${artinfo.on&&x.art?` data-art="${esc(x.art)}" role="button" tabindex="0"`:""}>${esc(x.name)}${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
   el.innerHTML=`<div class="ehead"><div><h2>Vorrat</h2><p class="hint">Was zu Hause ist und bald weg muss. Füllt sich aus euren Kassenbons, was ihr im Tagebuch esst, zieht die App ab.</p></div></div>
   <h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
   ${present.length>1?`<div class="vkat">${["",...present].map(k=>`<button type="button" class="chip${vorrat.kat===k?" on":""}" data-kat="${esc(k)}">${esc(k||"Alle")}</button>`).join("")}</div>`:""}
@@ -1019,7 +1019,7 @@ function katGuess(art,name){const t=((art||"")+" "+(name||"")).toLowerCase();con
   return [...s]}
 async function initArtinfo(){const A=window.MK_ART;if(!A)return;
   try{const l=await A.get();if(!l)return;artinfo.on=true;
-    for(const a of l)artinfo.map[a.artikel]={kat:String(a.kategorien||"").split(",").map(x=>x.trim()).filter(Boolean),fuer:a.fuer||"beide",ver:a.verarbeitung||""};
+    for(const a of l)artinfo.map[a.artikel]={kat:String(a.kategorien||"").split(",").map(x=>x.trim()).filter(Boolean),fuer:a.fuer||"beide",ver:a.verarbeitung||"",pfad:String(a.pfad||"").split(">").map(x=>x.trim()).filter(Boolean)};
     if(bons.on)drawBons();if(vorrat.on&&st.view==="vorrat")renderVorrat()}catch(e){}}
 initArtinfo();
 
@@ -1036,27 +1036,34 @@ function assignForm(btn){
     ${ext?`<div class="bext">
       <div class="brow"><span class="lbl">Verarbeitung</span><span class="seg" data-f="ver">${Object.keys(VER).map(v=>`<button type="button" class="chip" data-v="${v}">${v==="un"?"unverarbeitet":v}</button>`).join("")}</span></div>
       <div class="brow"><span class="lbl">Für</span><span class="seg" data-f="fuer">${Object.keys(FUER).map(v=>`<button type="button" class="chip" data-v="${v}">${FUER[v]}</button>`).join("")}</span></div>
+      <div class="brow"><span class="lbl">Einordnung</span><span class="pf"></span></div>
       <div class="brow"><span class="lbl">Kategorien</span><span class="kc"></span></div>
       <div class="brow"><input class="knew" placeholder="Eigene Kategorie, z. B. Grillen" aria-label="Eigene Kategorie" autocomplete="off"><button type="button" class="kadd">+</button></div>
     </div>`:""}`;
   td.appendChild(f);const inp=f.querySelector(".bart"),msg=f.querySelector(".bmsg");inp.focus();inp.select();
   // Werte: Verarbeitung gilt für diesen Einkauf (die KI schlägt sie je Produkt vor), Kategorien und für wen für den Artikel
-  let ver="",fuer="beide",kats=new Set(),forArt=null;
-  const load=a=>{const i=artinfo.map[a];forArt=a;fuer=i?i.fuer:"beide";kats=new Set(i&&i.kat.length?i.kat:katGuess(a,z.name||z.text));ver=z.verarbeitung||(i&&i.ver)||""};
+  let ver="",fuer="beide",kats=new Set(),forArt=null,pfad=[],pfTouched=false;
+  const load=a=>{const i=artinfo.map[a];forArt=a;fuer=i?i.fuer:"beide";kats=new Set(i&&i.kat.length?i.kat:katGuess(a,z.name||z.text));ver=z.verarbeitung||(i&&i.ver)||"";
+    pfad=i&&i.pfad&&i.pfad.length?i.pfad.slice():pathGuess(a,z.name||z.text);pfTouched=false};
   const paint=()=>{if(!ext)return;
     f.querySelectorAll('[data-f="ver"] .chip').forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===ver));
     f.querySelectorAll('[data-f="fuer"] .chip').forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===fuer));
     const own=new Set(Object.values(artinfo.map).flatMap(i=>i.kat));
     const list=[...new Set([...KATS,...own,...kats])];
+    f.querySelector(".pf").innerHTML=pfadEditor(pfad);
     f.querySelector(".kc").innerHTML=list.map(k=>`<button type="button" class="chip kchip${kats.has(k)?" on":""}" data-k="${esc(k)}">${esc(k)}</button>`).join("")};
   load(inp.value.trim());
   const upd=()=>{const v=inp.value.trim();const neu=v&&!knownArts().has(v);msg.textContent=neu?(owner?"Neuer Artikel, wird in deiner Artikelliste angelegt":"Bitte einen Artikel aus der Liste wählen"):"";
-    if(ext&&v!==forArt&&(!neu||!v)){load(v);paint()}};
+    if(ext&&v!==forArt&&(!neu||!v)){load(v);paint()}
+    else if(ext&&neu&&!pfTouched){pfad=pathGuess(v,z.name||z.text);paint()}};
   inp.oninput=upd;upd();paint();
   if(ext){
     f.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;
       const seg=c.closest(".seg");if(seg){if(seg.dataset.f==="ver")ver=ver===c.dataset.v?"":c.dataset.v;else fuer=c.dataset.v;paint();return}
-      if(c.dataset.k!=null){const k=c.dataset.k;kats.has(k)?kats.delete(k):kats.add(k);paint()}});
+      if(c.dataset.k!=null){const k=c.dataset.k;kats.has(k)?kats.delete(k):kats.add(k);paint();return}
+      if(c.dataset.pf!=null){pfTouched=true;if(c.dataset.pf==="-")pfad.pop();else if(pfad.length<6)pfad.push(c.dataset.pf);paint()}});
+    f.addEventListener("keydown",e=>{const pi=e.target.closest(".pfin");if(!pi||e.key!=="Enter")return;e.preventDefault();const v=pi.value.trim().replace(/>/g,"").slice(0,30);
+      if(v&&pfad.length<6){pfad.push(v);pfTouched=true;paint();const n=f.querySelector(".pfin");if(n)n.focus()}});
     const kn=f.querySelector(".knew");const addK=()=>{const k=kn.value.trim().slice(0,30);if(!k)return;if(kats.size<8)kats.add(k);kn.value="";paint()};
     f.querySelector(".kadd").onclick=addK;kn.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addK()}});
   }
@@ -1065,12 +1072,83 @@ function assignForm(btn){
     f.querySelectorAll("button,input").forEach(x=>x.disabled=true);msg.textContent="wird gespeichert …";
     const ok=await window.MK_BON.assign({id:z.id,artikel:v,neu,text:z.text,laden:b.laden,einheit:z.einheit,verarbeitung:ext?ver:(z.verarbeitung||""),beispiel:`${z.name||z.text} (${sname(b.laden)}) ${eur(z.preis)}`}).catch(()=>false);
     let ok2=true;
-    if(ok&&ext){const old=artinfo.map[v]||{};const info={kat:[...kats].slice(0,8),fuer,ver:old.ver||ver};
-      if(JSON.stringify(info)!==JSON.stringify({kat:old.kat,fuer:old.fuer,ver:old.ver})){
-        ok2=await window.MK_ART.set({artikel:v,kategorien:info.kat,fuer:info.fuer,verarbeitung:info.ver}).catch(()=>false);if(ok2)artinfo.map[v]=info}}
+    if(ok&&ext){const old=artinfo.map[v]||{};const info={kat:[...kats].slice(0,8),fuer,ver:old.ver||ver,pfad:pfad.slice(0,6)};
+      if(JSON.stringify(info)!==JSON.stringify({kat:old.kat,fuer:old.fuer,ver:old.ver,pfad:old.pfad})){
+        ok2=await window.MK_ART.set({artikel:v,kategorien:info.kat,fuer:info.fuer,verarbeitung:info.ver,pfad:info.pfad}).catch(()=>false);if(ok2)artinfo.map[v]=info}}
     if(ok){z.artikel=v;if(ext)z.verarbeitung=ver;drawBons();const d=[...document.querySelectorAll("details.bon")].find(x=>x.querySelector(`[data-b="${b.id}"]`));if(d)d.open=true;
       if(neu){const o=document.createElement("option");o.value=v;document.getElementById("artlist").appendChild(o)}
       if(!ok2){const i=document.getElementById("binfo");if(i)i.textContent="Artikel zugeordnet, aber Kategorien konnten nicht gespeichert werden. Bitte nochmal öffnen."}}
     else{f.querySelectorAll("button,input").forEach(x=>x.disabled=false);msg.textContent="Speichern hat nicht geklappt."}};
 }
 document.getElementById("bons")&&document.getElementById("bons").addEventListener("click",e=>{const b=e.target.closest(".bset");if(b){e.preventDefault();assignForm(b)}});
+
+// Einordnung als Pfad, z. B. tierisches Protein > Fleisch > Rind > Suppenfleisch, und beim Rind: woher das Stück kommt
+const COW={w:87,h:57,eye:[79,12],nose:[86,20],px:".............................................................................k.....................................................................................kkk....................................................................................kkk................................................................................hh..kkk................................................................................hhhhkkk................................................................................hhhhkkk................................................................................hhhhkkk................................................................................hhhhkk...............................................................................hhhhhhkkk.............eeeeeeeeeuuuuuuuuuuulllllllllllllllll......rrrbbbbbb........bbbhhhhhhhhkkkk..........eeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkk........eeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkk......eeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkk......eeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkk.....eeeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkk....eeeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkk....eeeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkk...eeeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmm..eeeeeeeeeeeeeeuuuuuuuuuuulllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmmm.eeeeeeeeeeeeeeeeeeeeeeeeelllllllllllllllllrrrrrrrrrbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmmmm.eeeeeeeeeeeeeeeeeeeeeeeelllllllllllllllllqqqqqqqqqbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmmmm.eeeeeeeeeeeeeeeeeeeeeeeelllllllllllllllllqqqqqqqqqbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmmmm.eeeeeeeeeeeeeeeeeeeeeeeelllllllllllllllllqqqqqqqqqbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmmmm.eeeeeeeeeeeeeeeeeeeeeeeedddddddddddddddddqqqqqqqqqbbbbbbbbbbbbbbbbbhhhhhhhhkkkkkkkmmmm.eeeeeeeeeeeeeeeeeeeeeeeedddddddddddddddddqqqqqqqqqbbbbbbbbbbbbbbbbbbbbbbbbbkkkkkkkmm....eeeeeeeeeeeeeeeeeeeeeeedddddddddddddddddqqqqqqqqqbbbbbbbbbbbbbbbbbbbbbbbb.......km.....eeeeeeeeeeeeeeeeeeeeeeedddddddddddddddddqqqqqqqqqbbbbbbbbbbbbbbbbbbb...................eeeeeeeeeeeeeeeeeeeeeeedddddddddddddddddqqqqqqqqqbbbbbbbbbbbbbbbbb......................eeeeeeeeeeeeeeeeeeeeeedddddddddddddddddqqqqqqqqqsssssssssssssssss......................eeeeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddssssssssssssssss.......................eeeeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddsssssssssssssss.........................eeeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddssssssssssssss..........................eeeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddssssssssssssss...........................eeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddsssssssssssss............................eeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddssssssssssss.............................eeeeeeeeeeeeeeeeeeeeddddddddddddddddddddddddddssssssssssss.............................eeeeeeeeeeeeeeeeee..ddddddddddddddddddddddddddssssssssssss.............................eeeeeeeeeeeeeeeeee....ddddddddddddddddddddddddssssssssssss.............................eeeeeeeeeeeeeeeeee.......ddddddddddd.......bbbbbbbbbbbbbbb.............................eeeeeeeeeeeeeeeee...........................bbbbbbbbbbbbbb.............................eeeeeeeeeeeeeeeee..........................bbbbbbb.bbbbbbbb...........................eeeeeeeeeeeeeeeeee..........................bbbbbb...bbbbbbb...........................eeeeeeeeeeeeeeeeeee.........................bbbbbb....bbbbbbb..........................eeeeeeeeeeeeeeeeeee.........................pppppp....ppppppp...........................eeeeeeeeee.eeeeeeee........................ppppp......pppppp...........................eeeeeeeee...eeeeeeee.......................ppppp......pppppp...........................eeeeeeeee.....eeeeeee......................ppppp.......pppppp...........................pppppppp......ppppppp.....................ppppp........ppppp.............................pppppp.......ppppppp...................pppppp........pppppp............................pppppp........ppppppp..................pppppp.........ppppp............................pppppp........ppppppp..................pppppp.........pppppp...........................pppppp.........ppppppp..................pppppp........pppppp..........................ppppppp..........ppppppp.................pppppp.........pppppp..........................ppppppp..........pppppp.................ffffff.........ffffff...........................ffffff..........ffffff.................................fffff...........................ffffff..................................................ff.............................ffffff........................................................................"};
+const BEEF={"Suppenfleisch":"sqp","Hackfleisch":"bhe","Gulasch":"bhe","Rouladen":"e","Tafelspitz":"u","Hüftsteak":"u","Rumpsteak":"l","Roastbeef":"l","Filet":"l","Entrecôte":"r","Ribeye":"r",
+  "Brust":"s","Querrippe":"q","Short Ribs":"q","Beinscheibe":"p","Ossobuco":"p","Schmorbraten":"b","Schaufelstück":"b","Flank Steak":"d","Bavette":"d","Backe":"k","Zunge":"k","Kamm":"h","Oberschale":"e","Unterschale":"e","Nuss":"e"};
+const BEEFTIP={"Suppenfleisch":"Viel Bindegewebe und Knochen, wird beim langen Köcheln zart. Gut für Brühe, Suppe, Eintopf.","Hackfleisch":"Meist aus Schulter, Hals und Keule gemischt.",
+  "Gulasch":"Kräftig durchwachsen, braucht 1,5 bis 2 Stunden Schmoren.","Rouladen":"Aus der mageren Keule, meist aus der Oberschale.","Tafelspitz":"Aus der Hüfte, klassisch in Brühe gezogen.",
+  "Hüftsteak":"Aus der Hüfte, mager und kräftig, kurz braten.","Rumpsteak":"Aus dem Roastbeef, zart, kurz braten.","Roastbeef":"Kaum beanspruchter Rückenmuskel, rosa garen.",
+  "Filet":"Liegt innen unter der Lende und wird kaum bewegt, das zarteste Stück.","Entrecôte":"Aus der Hochrippe, mit Fettauge, kurz braten oder grillen.","Ribeye":"Aus der Hochrippe, mit Fettauge, kurz braten oder grillen.",
+  "Brust":"Viel Bindegewebe, lange kochen oder schmoren.","Querrippe":"Rippenfleisch mit Knochen, ideal für Brühe und zum Schmoren.","Short Ribs":"Rippenfleisch mit Knochen, lange schmoren.",
+  "Beinscheibe":"Mit Markknochen und Sehnen, für Brühe und Ossobuco.","Ossobuco":"Beinscheibe mit Markknochen, lange schmoren.","Schmorbraten":"Aus der Schulter, lange schmoren.",
+  "Schaufelstück":"Aus der Schulter, schmoren oder ohne Sehne als Flat Iron kurz braten.","Flank Steak":"Aus dem Bauchlappen, kurz braten und quer zur Faser schneiden.","Bavette":"Aus dem Bauchlappen, kurz braten und quer zur Faser schneiden.",
+  "Backe":"Kaumuskel mit viel Kollagen, 3 bis 4 Stunden schmoren.","Zunge":"Lange kochen, dann häuten.","Kamm":"Aus dem Hals, für Gulasch und Schmorbraten.",
+  "Oberschale":"Mager, für Rouladen und Braten.","Unterschale":"Mager, für Braten und Schmoren.","Nuss":"Mager, für Braten, Steaks und Fondue."};
+const CUTN={k:"Kopf und Backe",h:"Hals",b:"Schulter",r:"Hochrippe",l:"Roastbeef und Filet",u:"Hüfte",e:"Keule",s:"Brust",q:"Querrippe",d:"Bauchlappen",p:"Beinscheibe"};
+const TREE={"tierisches Protein":{"Fleisch":{"Rind":Object.fromEntries(Object.keys(BEEF).map(k=>[k,{}])),"Schwein":{},"Geflügel":{"Hähnchen":{},"Pute":{},"Ente":{}},"Lamm":{},"Wild":{}},
+    "Fisch & Meeresfrüchte":{"Lachs":{},"Weißfisch":{},"Garnelen":{}},"Eier":{},"Milchprodukte":{"Käse":{},"Joghurt":{},"Quark":{},"Milch":{}}},
+  "pflanzliches Protein":{"Hülsenfrüchte":{"Linsen":{},"Kichererbsen":{},"Bohnen":{}},"Tofu & Tempeh":{"Tofu":{},"Tempeh":{}},"Nüsse & Samen":{}},
+  "Gemüse":{"Blattgemüse":{},"Kohl":{},"Wurzelgemüse":{},"Fruchtgemüse":{},"Pilze":{},"Kräuter":{}},"Obst":{"Beeren":{},"Kernobst":{},"Steinobst":{},"Zitrusfrüchte":{},"Exoten":{}},
+  "Kohlenhydrate":{"Getreide":{},"Nudeln":{},"Reis":{},"Brot":{},"Kartoffeln":{}},"Fette & Öle":{},"Snacks & Süßes":{},"Getränke":{}};
+const BEEFKEY=[["suppenfleisch","Suppenfleisch"],["hack","Hackfleisch"],["gulasch","Gulasch"],["roulade","Rouladen"],["tafelspitz","Tafelspitz"],["hüftsteak","Hüftsteak"],["rumpsteak","Rumpsteak"],["roastbeef","Roastbeef"],
+  ["filet","Filet"],["entrec","Entrecôte"],["ribeye","Ribeye"],["rib eye","Ribeye"],["short rib","Short Ribs"],["querrippe","Querrippe"],["brust","Brust"],["beinscheibe","Beinscheibe"],["ossobuco","Ossobuco"],
+  ["schmorbraten","Schmorbraten"],["schaufel","Schaufelstück"],["flank","Flank Steak"],["bavette","Bavette"],["backe","Backe"],["zunge","Zunge"],["oberschale","Oberschale"],["unterschale","Unterschale"]];
+function pathGuess(art,name){const t=((art||"")+" "+(name||"")).toLowerCase();const P=["tierisches Protein"],F=[...P,"Fleisch"];
+  if(/rind|beef|ochse|kalb/.test(t)){const k=BEEFKEY.find(([w])=>t.includes(w));return k?[...F,"Rind",k[1]]:[...F,"Rind"]}
+  if(/schwein|speck|schinken|salami|salsiccia/.test(t))return [...F,"Schwein"];
+  if(/hähnchen|huhn|hühn|chicken/.test(t))return [...F,"Geflügel","Hähnchen"];if(/pute|truthahn/.test(t))return [...F,"Geflügel","Pute"];if(/\bente\b|entenbrust/.test(t))return [...F,"Geflügel","Ente"];
+  if(/lamm/.test(t))return [...F,"Lamm"];if(/hirsch|reh|wildschwein/.test(t))return [...F,"Wild"];
+  if(/lachs/.test(t))return [...P,"Fisch & Meeresfrüchte","Lachs"];if(/garnele|shrimp/.test(t))return [...P,"Fisch & Meeresfrüchte","Garnelen"];if(/fisch|kabeljau|seelachs|dorade|forelle/.test(t))return [...P,"Fisch & Meeresfrüchte"];
+  if(/\beier\b|^eier/.test(t))return [...P,"Eier"];
+  if(/käse|mozzarella|feta|parmesan|parmigiano|gouda|brie|geramont/.test(t))return [...P,"Milchprodukte","Käse"];if(/joghurt|skyr/.test(t))return [...P,"Milchprodukte","Joghurt"];if(/quark/.test(t))return [...P,"Milchprodukte","Quark"];
+  if(/tofu/.test(t))return ["pflanzliches Protein","Tofu & Tempeh","Tofu"];if(/tempeh/.test(t))return ["pflanzliches Protein","Tofu & Tempeh","Tempeh"];
+  if(/linsen/.test(t))return ["pflanzliches Protein","Hülsenfrüchte","Linsen"];if(/kichererbs/.test(t))return ["pflanzliches Protein","Hülsenfrüchte","Kichererbsen"];if(/bohne/.test(t))return ["pflanzliches Protein","Hülsenfrüchte","Bohnen"];
+  const k=katGuess(art,name).find(x=>TREE[x]);return k?[k]:[]}
+function treeAt(p){let n=TREE;for(const x of p){if(!n||!n[x])return {};n=n[x]}return n||{}}
+function pfadEditor(p){const kids=Object.keys(treeAt(p));
+  return `${p.map((x,i)=>`<span class="chip pfc${i===p.length-1?" last":""}">${esc(x)}${i===p.length-1?`<button type="button" class="chip pfx" data-pf="-" aria-label="Letzte Stufe entfernen">×</button>`:""}</span>${i<p.length-1?'<span class="pfs">›</span>':""}`).join("")}
+    ${p.length?'<span class="pfs">›</span>':""}${kids.map(k=>`<button type="button" class="chip pfk" data-pf="${esc(k)}">${esc(k)}</button>`).join("")}
+    ${p.length<6?`<input class="pfin" placeholder="${p.length?"weitere Stufe":"Oberkategorie"}" aria-label="Stufe ergänzen" autocomplete="off">`:""}`}
+function cowSvg(hi){const {w,h,px}=COW;const at=(x,y)=>x<0||y<0||x>=w||y>=h?".":px[y*w+x];let o="";
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const r=at(x,y);if(r===".")continue;
+    const edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>at(x+a,y+b)===".");
+    const seam=!edge&&r!=="m"&&r!=="k"&&[[1,0],[0,1]].some(([a,b])=>{const n=at(x+a,y+b);return n!=="."&&n!==r&&n!=="m"});
+    const c=edge||r==="f"?"#1b221d":r==="m"?"#e8b4a6":hi.includes(r)?(seam?"#a8291f":"#e0473a"):seam?"#cdbfa8":"#f4efe6";
+    o+=`<rect x="${x}" y="${y}" width="1.03" height="1.03" fill="${c}"/>`}
+  o+=`<rect x="${COW.eye[0]}" y="${COW.eye[1]}" width="1" height="1" fill="#1b221d"/><rect x="${COW.nose[0]}" y="${COW.nose[1]}" width="1" height="1" fill="#1b221d"/>`;
+  return `<svg class="cow" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" role="img" aria-label="Rind, markiert: ${hi.split("").map(c=>CUTN[c]).join(", ")}">${o}</svg>`}
+// Artikelansicht: Einordnung, Herkunft am Tier, Preisverlauf aus euren Bons
+function openArt(art){
+  const i=artinfo.map[art]||{};const p=i.pfad&&i.pfad.length?i.pfad:pathGuess(art,"");
+  const buys=[];for(const b of bons.list||[])for(const z of b.zeilen)if(z.artikel===art&&z.typ==="ware")buys.push({...z,laden:b.laden,datum:b.datum});
+  buys.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
+  const last=buys[0],v=(last&&last.verarbeitung)||i.ver||"";
+  const dd=iso=>{const [Y,M,D]=String(iso).split("-");return D+"."+M+"."+Y};
+  let cowCard="";
+  if(p.includes("Rind")){const cut=p[p.length-1],hi=BEEF[cut]||"";
+    cowCard=`<div class="acard"><div class="lbl">Woher das Stück kommt</div>${cowSvg(hi)}
+      ${hi?`<div class="aleg">${hi.split("").map(c=>`<span><i></i>${CUTN[c]}</span>`).join("")}</div><div class="atip">${esc(BEEFTIP[cut]||"")}</div>`
+        :`<div class="atip">Welches Teilstück? Ergänze in der Einordnung nach "Rind" z. B. Suppenfleisch oder Gulasch, dann zeigt die App, wo es am Tier sitzt.</div>`}</div>`}
+  const el=document.getElementById("adlg");
+  el.innerHTML=`<div class="ahead"><h3>${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
+      <button type="button" class="aclose" aria-label="Schließen">×</button></div>
+    ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
+    ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}</div>`:`<p class="hint">Noch keine Einordnung. Tippe im Kassenbon auf den Artikel, um sie festzulegen.</p>`}
+    ${cowCard}
+    ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
+    ${buys.length?`<div class="lbl">Eure Käufe</div><table class="ahist"><tbody>${buys.map(z=>`<tr><td>${esc(dd(z.datum))}</td><td>${esc(sname(z.laden))}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>`:""}`;
+  const ov=document.getElementById("aovl");ov.hidden=false;el.querySelector(".aclose").onclick=()=>{ov.hidden=true}}
+(function wireArt(){const ov=document.getElementById("aovl");if(!ov)return;ov.addEventListener("click",e=>{if(e.target===ov)ov.hidden=true});
+  const go=e=>{const a=e.target.closest(".aopen");if(!a||e.target.closest(".bset,.vleer"))return;if(e.type==="keydown"&&e.key!=="Enter")return;e.preventDefault();openArt(a.dataset.art)};
+  document.addEventListener("click",go);document.addEventListener("keydown",go)})();
