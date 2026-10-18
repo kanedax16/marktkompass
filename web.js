@@ -112,6 +112,12 @@
     assign:async o=>{const r=await post({t:"bonzeile",...o});return !!(r&&r.ok)}
   };
 
+  // Artikel-Infos: Kategorien, für wen, Verarbeitung (nur Besitzer)
+  window.MK_ART={
+    get:async()=>{const d=await fetchData();return d&&d.role==="owner"?(d.artikelinfo||[]):null},
+    set:async o=>{const r=await post({t:"artikelinfo",...o});return !!(r&&r.ok)}
+  };
+
   // Vorrat: gemeinsamer Zustand (leer markiert, von Hand ergänzt)
   window.MK_VORRAT={
     get:async()=>{const d=await fetchData();if(!d||d.role!=="owner")throw 0;return d.state&&d.state.vorrat?d.state.vorrat.v:null},

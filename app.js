@@ -858,7 +858,7 @@ function drawBons(){
   el.innerHTML=bons.list.map(b=>{const ware=b.zeilen.filter(z=>z.typ==="ware");const zu=ware.filter(z=>z.artikel).length;
     const [Y,M,D]=String(b.datum).split("-");
     return `<details class="bon"><summary>${logo(b.laden)}<span class="bmeta"><strong>${esc(sname(b.laden))}</strong> ${esc(D+"."+M+"."+Y)}${b.filiale?` <small>${esc(b.filiale)}</small>`:""}</span><span class="bsum">${eur(b.summe)}</span><small class="bcnt">${ware.length} Artikel, ${zu} zugeordnet</small></summary>
-    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
+    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
     <div class="bfoot"><button type="button" class="bdel" data-id="${esc(b.id)}">Bon löschen</button></div></details>`}).join("");
 }
 function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
@@ -885,7 +885,7 @@ initBons();
 
 // Vorrat (Web-Version): füllt sich aus den Kassenbons, Gerichte aus dem Tagebuch ziehen ab, "leer" tippen korrigiert.
 // Haltbarkeit ist eine Schätzung je Artikel. Geteilter Zustand (leer markiert, von Hand ergänzt) liegt im Haushalt.
-var vorrat={on:false,st:{gone:{},extra:[]},saving:false};
+var vorrat={on:false,st:{gone:{},extra:[]},saving:false,kat:""};
 const SHELF=[[/salat|rucola|spinat|kresse|sprossen|kräuter|basilikum|petersilie|schnittlauch|koriander|minze/i,4],[/beere|himbeer|erdbeer|heidelbeer|brombeer|kirsch/i,3],
  [/pilz|champignon|seitling/i,4],[/hack/i,1],[/lachs|fisch|forelle|garnele|dorade|kabeljau|seelachs|muschel|tintenfisch/i,2],[/tiefgek|tk\b|tiefgefr/i,180],
  [/hähnchen|pute|ente|gans|rind|kalb|lamm|steak|fleisch/i,3],[/milch|joghurt|kefir|skyr|quark|sahne|buttermilch/i,10],[/eier/i,21],[/butter/i,30],
@@ -901,7 +901,7 @@ const normW=s=>String(s||"").toLowerCase().replace(/[^a-zäöüß]+/g," ").trim(
 function stockItems(){
   const today=isoDay(0),out=[];
   for(const b of (typeof bons!=="undefined"&&bons.list)||[])b.zeilen.forEach((z,i)=>{if(z.typ!=="ware")return;
-    const key=b.id+"|"+i;out.push({key,art:z.artikel||"",name:z.artikel||z.name,detail:z.name,menge:z.menge,einheit:z.einheit,datum:b.datum,laden:b.laden,bis:addDays(b.datum,shelfDays(z.artikel,z.name))})});
+    const key=b.id+"|"+i;out.push({key,art:z.artikel||"",name:z.artikel||z.name,detail:z.name,menge:z.menge,einheit:z.einheit,datum:b.datum,laden:b.laden,bis:addDays(b.datum,shelfDays(z.artikel,z.name)),ver:z.verarbeitung||""})});
   for(const x of vorrat.st.extra||[])out.push({key:"x|"+x.id,art:x.art||"",name:x.name,detail:"",datum:x.datum,laden:"",bis:addDays(x.datum,shelfDays(x.art,x.name)),manual:true});
   // Gegessenes zieht ab: je Mahlzeit und Zutat das älteste passende Stück
   const used=new Set();
@@ -933,10 +933,14 @@ function ideas(bald){
 }
 function renderVorrat(){
   if(!vorrat.on)return;const el=document.getElementById("vorratv");if(!el)return;
-  const its=stockItems(),bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
-  const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn">${esc(x.name)}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
+  const all=stockItems();
+  const present=artinfo.on?[...new Set(all.flatMap(x=>katsOf(x.art)))].sort((a,b)=>a.localeCompare(b,"de")):[];
+  if(!present.includes(vorrat.kat))vorrat.kat="";
+  const its=vorrat.kat?all.filter(x=>katsOf(x.art).includes(vorrat.kat)):all,bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
+  const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn">${esc(x.name)}${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
   el.innerHTML=`<div class="ehead"><div><h2>Vorrat</h2><p class="hint">Was zu Hause ist und bald weg muss. Füllt sich aus euren Kassenbons, was ihr im Tagebuch esst, zieht die App ab.</p></div></div>
   <h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
+  ${present.length>1?`<div class="vkat">${["",...present].map(k=>`<button type="button" class="chip${vorrat.kat===k?" on":""}" data-kat="${esc(k)}">${esc(k||"Alle")}</button>`).join("")}</div>`:""}
   ${!its.length?`<p class="hint">${(bons.list||[]).length?"Alles verbraucht, oder noch nichts eingetragen.":"Fotografiert eure Kassenbons im Reiter Einkaufen, dann füllt sich der Vorrat von selbst."} Was ihr esst, zieht die App ab.</p>`:""}
   ${bald.length?`<div class="vbox bald"><div class="vh">Bald verbrauchen</div>${bald.map(row).join("")}${ideas(bald)}</div>`:""}
   ${rest.length?`<details class="vbox"><summary class="vh">Noch da <small>${rest.length}</small></summary>${rest.map(row).join("")}</details>`:""}
@@ -945,30 +949,89 @@ function renderVorrat(){
 (function wireVorrat(){
   const host=document.getElementById("vorratv");if(!host)return;
   host.addEventListener("click",e=>{const q=e.target.closest("[data-quick]");if(q){openEssen(q.dataset.quick);return}
+    const kb=e.target.closest("[data-kat]");if(kb){vorrat.kat=kb.dataset.kat;renderVorrat();return}
     const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);renderVorrat();saveVorrat()});
   host.addEventListener("submit",e=>{if(e.target.id!=="vadd")return;e.preventDefault();const v=document.getElementById("vnew").value.trim();if(!v)return;
     const art=typeof artFor==="function"?artFor(v):"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0)});renderVorrat();saveVorrat()});
 })();
 initVorrat();
 
-// Bonzeilen zuordnen: vorhandenen Artikel wählen oder (nur Besitzer) neuen Artikel mit Gruppe anlegen
+// Artikel-Infos (nur Besitzer): mehrere Kategorien je Artikel, für wen, übliche Verarbeitung
+var artinfo={on:false,map:{}};
+const KATS=["pflanzliches Protein","tierisches Protein","Gemüse","Obst","Kohlenhydrate","Milchprodukte","Fette & Öle","Snacks & Süßes","Getränke","Vorrat","Tiefkühl","Frühstück"];
+const VER={un:"unverarbeitet",leicht:"leicht verarbeitet",stark:"stark verarbeitet"};
+const FUER={beide:"Beide",p1:"Person 1",p2:"Person 2"};
+const katsOf=art=>art&&artinfo.map[art]?artinfo.map[art].kat:[];
+function artBadges(art,ver){const i=art&&artinfo.map[art];const v=ver||(i&&i.ver)||"";let h="";
+  if(v)h+=` <span class="vb v-${v}" title="${VER[v]}">${v==="un"?"unverarbeitet":v}</span>`;
+  if(i&&i.fuer&&i.fuer!=="beide")h+=` <span class="vb fu">${FUER[i.fuer]}</span>`;return h}
+// Vorschlag, solange für einen Artikel noch nichts festgelegt ist
+function katGuess(art,name){const t=((art||"")+" "+(name||"")).toLowerCase();const s=new Set();
+  const g=art&&knownArts().has(art)&&typeof grpOf==="function"?grpOf(art):"";
+  const G={"Fleisch":["tierisches Protein"],"Fisch":["tierisches Protein"],"Milch & Eier":["Milchprodukte"],"Käse":["Milchprodukte"],"Nüsse & Hülsenfrüchte":["pflanzliches Protein"],
+    "Obst":["Obst"],"Gemüse":["Gemüse"],"Getreide & Flocken":["Kohlenhydrate"],"Saaten & Öle":["Fette & Öle"],"Getränke":["Getränke"],"Vorrat":["Vorrat"]};
+  for(const k of G[g]||[])s.add(k);
+  if(/\beier\b|^eier/.test(t)){s.delete("Milchprodukte");s.add("tierisches Protein")}
+  if(/tofu|tempeh|seitan|linsen|kichererbs|bohne|erbsen|edamame|lupine|soja/.test(t))s.add("pflanzliches Protein");
+  if(/nudel|pasta|reis|kartoffel|brot|brötchen|couscous|bulgur|quinoa|gnocchi/.test(t))s.add("Kohlenhydrate");
+  if(/tiefgek|\btk\b|tiefgefr/.test(t))s.add("Tiefkühl");
+  if(/schokolade|keks|chips|gummi|riegel|kuchen|eis\b/.test(t))s.add("Snacks & Süßes");
+  if(/hafer|müsli|flocken|marmelade|granola/.test(t))s.add("Frühstück");
+  return [...s]}
+async function initArtinfo(){const A=window.MK_ART;if(!A)return;
+  try{const l=await A.get();if(!l)return;artinfo.on=true;
+    for(const a of l)artinfo.map[a.artikel]={kat:String(a.kategorien||"").split(",").map(x=>x.trim()).filter(Boolean),fuer:a.fuer||"beide",ver:a.verarbeitung||""};
+    if(bons.on)drawBons();if(vorrat.on&&st.view==="vorrat")renderVorrat()}catch(e){}}
+initArtinfo();
+
+// Bonzeilen zuordnen: vorhandenen Artikel wählen oder (nur Besitzer) neuen Artikel anlegen, dazu Kategorien, für wen, Verarbeitung
 function knownArts(){return new Set([...document.querySelectorAll("#artlist option")].map(o=>o.value))}
 function assignForm(btn){
   const b=bons.list.find(x=>String(x.id)===btn.dataset.b);const z=b&&b.zeilen.find(x=>String(x.id)===btn.dataset.z);if(!z)return;
   const td=btn.closest("td");if(td.querySelector(".bform"))return;
   const owner=(typeof essen!=="undefined"&&essen.role==="owner")||!!window.MK_PRUEF&&typeof pruef!=="undefined"&&pruef.on;
+  const ext=owner&&artinfo.on;
   const f=document.createElement("form");f.className="bform";
-  f.innerHTML=`<input list="artlist" placeholder="Artikel wählen${owner?" oder neu eingeben":""}" value="${esc(z.artikel||"")}" aria-label="Artikel">
-    <button type="submit">OK</button><button type="button" class="bx">×</button><small class="bmsg"></small>`;
-  td.appendChild(f);const inp=f.querySelector("input"),msg=f.querySelector(".bmsg");inp.focus();inp.select();
-  const upd=()=>{const v=inp.value.trim();const neu=v&&!knownArts().has(v);msg.textContent=neu?(owner?"Neuer Artikel, wird in deiner Artikelliste angelegt":"Bitte einen Artikel aus der Liste wählen"):""};
-  inp.oninput=upd;upd();
+  f.innerHTML=`<input class="bart" list="artlist" placeholder="Artikel wählen${owner?" oder neu eingeben":""}" value="${esc(z.artikel||"")}" aria-label="Artikel">
+    <button type="submit">OK</button><button type="button" class="bx">×</button><small class="bmsg"></small>
+    ${ext?`<div class="bext">
+      <div class="brow"><span class="lbl">Verarbeitung</span><span class="seg" data-f="ver">${Object.keys(VER).map(v=>`<button type="button" class="chip" data-v="${v}">${v==="un"?"unverarbeitet":v}</button>`).join("")}</span></div>
+      <div class="brow"><span class="lbl">Für</span><span class="seg" data-f="fuer">${Object.keys(FUER).map(v=>`<button type="button" class="chip" data-v="${v}">${FUER[v]}</button>`).join("")}</span></div>
+      <div class="brow"><span class="lbl">Kategorien</span><span class="kc"></span></div>
+      <div class="brow"><input class="knew" placeholder="Eigene Kategorie, z. B. Grillen" aria-label="Eigene Kategorie" autocomplete="off"><button type="button" class="kadd">+</button></div>
+    </div>`:""}`;
+  td.appendChild(f);const inp=f.querySelector(".bart"),msg=f.querySelector(".bmsg");inp.focus();inp.select();
+  // Werte: Verarbeitung gilt für diesen Einkauf (die KI schlägt sie je Produkt vor), Kategorien und für wen für den Artikel
+  let ver="",fuer="beide",kats=new Set(),forArt=null;
+  const load=a=>{const i=artinfo.map[a];forArt=a;fuer=i?i.fuer:"beide";kats=new Set(i&&i.kat.length?i.kat:katGuess(a,z.name||z.text));ver=z.verarbeitung||(i&&i.ver)||""};
+  const paint=()=>{if(!ext)return;
+    f.querySelectorAll('[data-f="ver"] .chip').forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===ver));
+    f.querySelectorAll('[data-f="fuer"] .chip').forEach(c=>c.setAttribute("aria-pressed",c.dataset.v===fuer));
+    const own=new Set(Object.values(artinfo.map).flatMap(i=>i.kat));
+    const list=[...new Set([...KATS,...own,...kats])];
+    f.querySelector(".kc").innerHTML=list.map(k=>`<button type="button" class="chip kchip${kats.has(k)?" on":""}" data-k="${esc(k)}">${esc(k)}</button>`).join("")};
+  load(inp.value.trim());
+  const upd=()=>{const v=inp.value.trim();const neu=v&&!knownArts().has(v);msg.textContent=neu?(owner?"Neuer Artikel, wird in deiner Artikelliste angelegt":"Bitte einen Artikel aus der Liste wählen"):"";
+    if(ext&&v!==forArt&&(!neu||!v)){load(v);paint()}};
+  inp.oninput=upd;upd();paint();
+  if(ext){
+    f.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;
+      const seg=c.closest(".seg");if(seg){if(seg.dataset.f==="ver")ver=ver===c.dataset.v?"":c.dataset.v;else fuer=c.dataset.v;paint();return}
+      if(c.dataset.k!=null){const k=c.dataset.k;kats.has(k)?kats.delete(k):kats.add(k);paint()}});
+    const kn=f.querySelector(".knew");const addK=()=>{const k=kn.value.trim().slice(0,30);if(!k)return;if(kats.size<8)kats.add(k);kn.value="";paint()};
+    f.querySelector(".kadd").onclick=addK;kn.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addK()}});
+  }
   f.querySelector(".bx").onclick=()=>f.remove();
   f.onsubmit=async e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const neu=!knownArts().has(v);if(neu&&!owner){upd();return}
     f.querySelectorAll("button,input").forEach(x=>x.disabled=true);msg.textContent="wird gespeichert …";
-    const ok=await window.MK_BON.assign({id:z.id,artikel:v,neu,text:z.text,laden:b.laden,einheit:z.einheit,beispiel:`${z.name||z.text} (${sname(b.laden)}) ${eur(z.preis)}`}).catch(()=>false);
-    if(ok){z.artikel=v;drawBons();const d=[...document.querySelectorAll("details.bon")].find(x=>x.querySelector(`[data-b="${b.id}"]`));if(d)d.open=true;
-      if(neu){const o=document.createElement("option");o.value=v;document.getElementById("artlist").appendChild(o)}}
+    const ok=await window.MK_BON.assign({id:z.id,artikel:v,neu,text:z.text,laden:b.laden,einheit:z.einheit,verarbeitung:ext?ver:(z.verarbeitung||""),beispiel:`${z.name||z.text} (${sname(b.laden)}) ${eur(z.preis)}`}).catch(()=>false);
+    let ok2=true;
+    if(ok&&ext){const old=artinfo.map[v]||{};const info={kat:[...kats].slice(0,8),fuer,ver:old.ver||ver};
+      if(JSON.stringify(info)!==JSON.stringify({kat:old.kat,fuer:old.fuer,ver:old.ver})){
+        ok2=await window.MK_ART.set({artikel:v,kategorien:info.kat,fuer:info.fuer,verarbeitung:info.ver}).catch(()=>false);if(ok2)artinfo.map[v]=info}}
+    if(ok){z.artikel=v;if(ext)z.verarbeitung=ver;drawBons();const d=[...document.querySelectorAll("details.bon")].find(x=>x.querySelector(`[data-b="${b.id}"]`));if(d)d.open=true;
+      if(neu){const o=document.createElement("option");o.value=v;document.getElementById("artlist").appendChild(o)}
+      if(!ok2){const i=document.getElementById("binfo");if(i)i.textContent="Artikel zugeordnet, aber Kategorien konnten nicht gespeichert werden. Bitte nochmal öffnen."}}
     else{f.querySelectorAll("button,input").forEach(x=>x.disabled=false);msg.textContent="Speichern hat nicht geklappt."}};
 }
 document.getElementById("bons")&&document.getElementById("bons").addEventListener("click",e=>{const b=e.target.closest(".bset");if(b){e.preventDefault();assignForm(b)}});
