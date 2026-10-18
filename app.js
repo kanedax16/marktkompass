@@ -183,7 +183,10 @@ document.getElementById("snone").onclick=()=>{allStores().forEach(k=>st.off.add(
 const oneDay=r=>r.kind==="angebot"&&status(r,new Date())==="last";
 function status(r,now){
   const f=r.validFrom?new Date(r.validFrom):null, t=r.validTo?new Date(r.validTo):null;
-  if(t&&t<now)return"exp"; if(f&&f>now)return"soon";
+  if(t&&t<now)return"exp";
+  // Nur, was in den nächsten 7 Tagen gilt: Angebote, die erst später starten, werden ausgeblendet
+  if(f){const lim=new Date(now);lim.setHours(23,59,59,999);lim.setDate(lim.getDate()+7);if(f>lim)return"exp"}
+  if(f&&f>now)return"soon";
   if(t&&t-now<36e5*24&&t.getDate()===now.getDate())return"last"; return"now";
 }
 const isBio=r=>/\bbio\b|bio-|naturland|bioland|demeter|nur nur natur|rewe bio|k-bio|biobio/i.test(r.product+" "+r.brand+" "+r.description)||/denn|alnatura/i.test(r.retailer);
