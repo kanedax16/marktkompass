@@ -1141,7 +1141,11 @@ function openArt(art,editing){
     cowCard=`<div class="acard"><div class="lbl">Woher das Stück kommt</div>${cowSvg(hi)}
       ${hi?`<div class="aleg">${hi.split("").map(c=>`<span><i></i>${CUTN[c]}</span>`).join("")}</div><div class="atip">${esc(BEEFTIP[cut]||"")}</div>`
         :`<div class="atip">Welches Teilstück? Ergänze in der Einordnung nach "Rind" z. B. Suppenfleisch oder Gulasch, dann zeigt die App, wo es am Tier sitzt.</div>`}</div>`}
-  const el=document.getElementById("adlg");
+    else if(window.HERKUNFT){const h=HERKUNFT(art,p);
+    if(h)cowCard=`<div class="acard"><div class="lbl">${h.plant?"So wächst es":"Woher es kommt"}</div>${h.svg}
+      ${h.iss?`<div class="aleg"><span><i class="${h.plant?"ring":""}"></i>Das isst du: ${esc(h.iss)}</span></div>`:h.needCut?`<div class="atip">Welches Stück? Ergänze in der Einordnung z. B. Brust, Keule oder Bauch, dann zeigt die App, wo es sitzt.</div>`:""}
+      ${h.fakt?`<div class="atip">${esc(h.fakt)}</div>`:""}${h.saison||""}</div>`}
+const el=document.getElementById("adlg");
   el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
       <button type="button" class="aclose" aria-label="Schließen">×</button></div>
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}

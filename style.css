@@ -457,3 +457,10 @@ table.ahist small{display:block;color:var(--muted);font-size:11px}
 .bform.bed{margin-top:0}.bform.bed .bext{margin-top:0}
 .bform .asave{font:inherit;font-size:13px;font-weight:700;padding:5px 14px;border-radius:6px;border:0;background:var(--fg);color:var(--bg);cursor:pointer}
 table.ahist .logo{height:14px;vertical-align:-2px}
+.aleg i.ring{background:transparent;box-shadow:inset 0 0 0 2px #e0473a}
+.ssn{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.ssr{display:grid;grid-template-columns:repeat(12,1fr);gap:2px}
+.ssr span{font-size:10px;font-weight:700;text-align:center;padding:3px 0;border-radius:3px;background:#ece9e2;color:var(--muted)}
+.ssr span.now{outline:2px solid var(--fg);outline-offset:-1px}
+.s-H{background:#5d9a3c!important;color:#fff!important}.s-T{background:#a8cf86!important;color:#1b221d!important}.s-L{background:#c9b48a!important;color:#1b221d!important}.s-I{background:#b9d3e6!important;color:#1b221d!important}
+.ssl{display:flex;gap:8px;font-size:11px;color:var(--muted)}.ssl span{padding:0 5px;border-radius:3px}
