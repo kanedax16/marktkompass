@@ -97,16 +97,16 @@
     decide:async(x,e)=>{const r=await post({t:"pruefen",pkey:x.k,entscheid:e,product:x.p,art:x.a});return !!(r&&r.ok)}
   };
 
-  // Essens-Tagebuch: beide Links dürfen eintragen
+  // Neue Bausteine (Essen, Kassenbons, Vorrat) vorerst nur im Besitzer-Link
   window.MK_ESSEN={
-    get:async()=>{const d=await fetchData();return d?{meals:d.meals||[],role:d.role}:null},
+    get:async()=>{const d=await fetchData();return d&&d.role==="owner"?{meals:d.meals||[],role:d.role}:null},
     add:async o=>{const r=await post({t:"essen",...o});return r&&r.ok?r.meal:null},
     del:async id=>{const r=await post({t:"essen_del",id});return !!(r&&r.ok)}
   };
 
   // Kassenbons: beide Links dürfen fotografieren
   window.MK_BON={
-    get:async()=>{const d=await fetchData();return d?(d.bons||[]):null},
+    get:async()=>{const d=await fetchData();return d&&d.role==="owner"?(d.bons||[]):null},
     add:async foto=>post({t:"bon",foto}),
     del:async id=>{const r=await post({t:"bon_del",id});return !!(r&&r.ok)},
     assign:async o=>{const r=await post({t:"bonzeile",...o});return !!(r&&r.ok)}
@@ -114,7 +114,7 @@
 
   // Vorrat: gemeinsamer Zustand (leer markiert, von Hand ergänzt)
   window.MK_VORRAT={
-    get:async()=>{const d=await fetchData();if(!d)throw 0;return d.state&&d.state.vorrat?d.state.vorrat.v:null},
+    get:async()=>{const d=await fetchData();if(!d||d.role!=="owner")throw 0;return d.state&&d.state.vorrat?d.state.vorrat.v:null},
     set:async v=>post({t:"set",name:"vorrat",value:v})
   };
 
