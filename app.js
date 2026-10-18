@@ -246,7 +246,7 @@ function render(){
       <div class="tablewrap"><table class="offers"><thead><tr><th>Laden</th><th>Produkt</th><th style="text-align:right">Preis</th><th style="text-align:right">Grundpreis</th><th>Gültig</th></tr></thead><tbody>
       ${arr.map((o,i)=>`<tr class="${o===best?"best":""}${oneDay(o)?" oneday":""}">
         <td><span class="st">${logo(o.retailer)}${esc(sname(o.retailer))}</span>${shopHtml(o)}${o.kind==="angebot"?`<button type="button" class="gone" data-gone="${o.offerId}" title="Im Laden nicht gefunden: ausblenden, bis das Angebot abläuft">nicht gefunden</button>`:""}</td>
-        <td class="pname"><strong>${esc(o.product)}</strong>${o.brand?` <span class="meta">${esc(o.brand)}</span>`:""}${pills(o)}<div class="meta">${esc(o.description)}</div><div class="bar"><i style="width:${Math.max(6,Math.round(o.refPrice/(maxU[o.unit]||1)*100))}%"></i></div></td>
+        <td class="pname"><strong>${esc(pn(o))}</strong>${o.brand?` <span class="meta">${esc(o.brand)}</span>`:""}${pills(o)}<div class="meta">${esc(o.description)}</div><div class="bar"><i style="width:${Math.max(6,Math.round(o.refPrice/(maxU[o.unit]||1)*100))}%"></i></div></td>
         <td class="num">${eur(o.price)}${o.oldPrice?`<span class="strike">${eur(o.oldPrice)}</span>`:""}${amt(o)?`<div class="meta">für ${amt(o)}</div>`:""}</td>
         <td class="num"><strong>${eur(o.refPrice)}</strong><div class="meta">je ${esc(UNIT[o.unit]||o.unit)}</div></td>
         <td style="white-space:nowrap">${!o.validFrom&&!o.validTo?`<span class="meta">${o.kind==="normalpreis"?"Normalpreis":o.kind==="bonpreis"?"Euer Bonpreis":"Dauerpreis"}</span>`:`${o.validFrom?dfmt(new Date(o.validFrom)):""}<br><span class="meta">bis ${o.validTo?dfmt(new Date(o.validTo)):"?"}</span>`}</td></tr>`).join("")}
@@ -310,8 +310,8 @@ function steals(vis){
 function renderSteals(vis,list){
   const top=steals(vis);lastTop=top;if(!top.length)return;
   const sec=document.createElement("section");sec.className="steals";
-  const card=(x,i)=>`<div class="scard${oneDay(x.r)?" oneday":""}" role="button" tabindex="0" data-i="${i}" title="Details zu ${esc(x.r.product)}"><div class="rank"><img class="px" src="${icon(x.r.art,x.r.grp)}" alt=""><b>${i+1}</b></div>
-      <div class="nm">${esc(x.r.product)}${pills(x.r)}</div><div class="pct">−${Math.round(x.d*100)} %</div>
+  const card=(x,i)=>`<div class="scard${oneDay(x.r)?" oneday":""}" role="button" tabindex="0" data-i="${i}" title="Details zu ${esc(pn(x.r))}"><div class="rank"><img class="px" src="${icon(x.r.art,x.r.grp)}" alt=""><b>${i+1}</b></div>
+      <div class="nm">${favStar(x.r.art)}${esc(pn(x.r))}${pills(x.r)}</div><div class="pct">−${Math.round(x.d*100)} %</div>
       <div class="pr"><strong>${eur(x.r.price)}</strong>${amt(x.r)?` <b class="amt">für ${amt(x.r)}</b>`:""}<span>spart ${eur(x.save)} · ${esc(x.why)}</span></div></div>`;
   // Spalten je Laden, absteigend nach Summe der Punkte (wo sich der Weg am meisten lohnt); die ersten drei bekommen Gold, Silber, Bronze
   const by={};top.forEach((x,i)=>(by[x.r.retailer]=by[x.r.retailer]||[]).push([x,i]));
@@ -323,7 +323,23 @@ function renderSteals(vis,list){
       ${arr.map(([x,i])=>card(x,i)).join("")}</div>`).join("")}</div>`;
   list.appendChild(sec);
 }
-function pills(o){let h="";if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
+// Anzeigename für Obst und Gemüse: Artikel (Einzahl) und Sorte in Klammern statt Werbetext, z. B. "Äpfel Gala Unsere Heimat" → "Apfel (Gala)"
+const SING={"Äpfel":"Apfel","Birnen":"Birne","Bananen":"Banane","Zitronen":"Zitrone","Limetten":"Limette","Orangen":"Orange","Kiwi":"Kiwi","Kaki":"Kaki","Hokkaido Kürbis":"Kürbis","Gurken":"Gurke","Tomaten":"Tomate","Möhren":"Möhre","Zwiebeln":"Zwiebel","Rote Zwiebeln":"Rote Zwiebel","Kartoffeln":"Kartoffel","Süßkartoffeln":"Süßkartoffel","Auberginen":"Aubergine","Avocado":"Avocado","Feigen":"Feige","Grapefruit":"Grapefruit","Clementinen und Mandarinen":"Clementine"};
+const SORTEN=[["Kürbis",/\b(hokkaido|butternut|muskat|spaghetti|bischofsmütze|patisson)\b/i],["Apfel",/\b(gala|elstar|braeburn|jonagold|jonagored|pink lady|ambrosia|boskoop|granny smith|fuji|golden delicious|topaz|cox orange|kanzi|jazz|red delicious|evelina|santana|wellant|honeycrunch|envy|rubens|idared|red prince|cripps pink)\b/i],["Birne",/\b(williams|abate|conference|alexander lucas|xenia|forelle|santa maria|nashi)\b/i],["Kartoffel",/\b(festkochend|mehligkochend|vorwiegend festkochend|drillinge)\b/i],["Tomate",/\b(cherry|rispen|roma|ochsenherz|datteltomate|cocktail)\b/i]];
+const cap=w=>w.replace(/(^|\s)\S/g,c=>c.toUpperCase());
+// Werbewörter und doppelte Namen weglassen ("Zarte Kalbsschnitzel" → "Kalbsschnitzel", "Wolfsbarsch Loup de Mer" → "Wolfsbarsch"); der Prospekttext steht weiter auf der Produktseite
+const WERBUNG=/\b(zarte?[snr]?|frische?[snr]?|saftige?[snr]?|feine?[snr]?|knackige?[snr]?|aromatische?[snr]?|leckere?[snr]?|köstliche?[snr]?|ausgesuchte?[snr]?|beste?[snr]?|premium|delikatess|extra zarte?[snr]?|herzhafte?[snr]?|unsere heimat|gutes aus der region|meine metzgerei|metzgerfrisch|vom feinsten)\b/gi;
+const SYNONYM=[[/\s*loup de mer\b/i,""],[/\s*dorade royale?\b/i," Dorade"],[/\bbranzino\b/i,"Wolfsbarsch"]];
+function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
+function dispName(r){if(!r.art||!/^(Obst|Gemüse)$/.test(r.grp||""))return cleanName(r.product);
+  if(/hokkaido/i.test(r.art)&&!SORTEN[0][1].test(r.product))return "Kürbis (Hokkaido)";
+  const base=SING[r.art]||r.art,sv=SORTEN.find(([b])=>b===base);const m=sv&&String(r.product).match(sv[1]);
+  return m?`${base} (${cap(m[1].toLowerCase())})`:base}
+const pn=r=>r.disp||r.product;
+// Favoriten (Stern) je Artikel, gemeinsam gespeichert in den Einstellungen
+const isFav=a=>!!a&&Array.isArray(pick.fav)&&pick.fav.includes(a);
+const favStar=a=>isFav(a)?`<span class="fstar" title="Favorit">★</span> `:"";
+function pills(o){let h="";if(o.disp&&/^(Obst|Gemüse)$/.test(o.grp||"")&&isBio(o))h+=`<span class="pill bio">Bio</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
 
 // ===== Einkaufen: gespeicherte Gerichte und Einkaufsliste =====
 const UNITS=["g","kg","Stk","ml","l","Bund","Pck"];
@@ -464,7 +480,7 @@ function renderShop(){
     ${arr.map(e=>{const o=e.best&&e.best.o;return `<label class="li${e.done?" done":""}" data-key="${esc(e.key)}">
       <input type="checkbox" ${e.done?"checked":""}><img class="px aopen" src="${icon(e.art||e.name,e.art?grpOf(e.art):null)}" alt="" data-art="${esc(e.art||e.name)}">
       <span class="lt"><span class="ln"><b>${qtyTxt(e.fam,e.base,e.unit)}</b> <span class="aopen" data-art="${esc(e.art||e.name)}">${esc(e.name)}</span></span>
-      <span class="lo">${o?`${esc(o.product)} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}${homeNote(e.art||e.name)}</span></span>
+      <span class="lo">${o?`${esc(pn(o))} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}${homeNote(e.art||e.name)}</span></span>
       ${e.cost!=null?`<span class="lc">${eur(e.cost)}</span>`:""}${e.extra?`<button type="button" class="ibtn" data-act="del" aria-label="${esc(e.name)} entfernen">×</button>`:""}</label>`}).join("")}</div>`}).join("");
   document.getElementById("ltotal").textContent=total?`ca. ${eur(total)} zu den günstigsten Preisen`:"";
 }
@@ -569,14 +585,14 @@ function renderProsp(now){
   const stores=Object.keys(by).sort((a,b)=>((near(a)??99)-(near(b)??99))||by[b].length-by[a].length);
   const until=arr=>{const t=arr.map(r=>r.validTo).filter(Boolean).sort();return t.length?dfmt(new Date(t[t.length-1])):""};
   let hier="";if(L&&stores.length===1){let t=[];try{t=steals(offers)}catch(e){}
-    hier=`<div class="hier"><div class="hh">${logo(L)}<span>Du bist bei <b>${esc(sname(L))}</b>. Das lohnt sich hier am meisten:</span></div>${t.length?`<ol>${t.slice(0,6).map(x=>`<li><span class="aopen" data-art="${esc(x.r.art||x.r.product)}">${esc(x.r.product)}</span> <b>${eur(x.r.price)}</b> <span class="hpct">−${Math.round(x.d*100)} %</span> <small>${esc(x.why)}</small></li>`).join("")}</ol>`:`<p class="hint">Hier gerade kein besonders starkes Angebot, unten alles im Prospekt.</p>`}${listHere(L)}</div>`}
+    hier=`<div class="hier"><div class="hh">${logo(L)}<span>Du bist bei <b>${esc(sname(L))}</b>. Das lohnt sich hier am meisten:</span></div>${t.length?`<ol>${t.slice(0,6).map(x=>`<li><span class="aopen" data-art="${esc(x.r.art||x.r.product)}">${esc(pn(x.r))}</span> <b>${eur(x.r.price)}</b> <span class="hpct">−${Math.round(x.d*100)} %</span> <small>${esc(x.why)}</small></li>`).join("")}</ol>`:`<p class="hint">Hier gerade kein besonders starkes Angebot, unten alles im Prospekt.</p>`}${listHere(L)}</div>`}
   el.innerHTML=hier+`<p class="phead">${offers.length} Angebote in ${stores.length} ${stores.length===1?"Laden":"Läden"}${st.grp!=="Alle"?" · "+esc(st.grp):""}, sortiert nach Entfernung ab Lokhalle</p>`+stores.map(k=>{
     const arr=by[k],km=near(k);
     const grps=GROUPS.filter(g=>arr.some(r=>r.grp===g));
     return`<details class="pstore" open><summary>${logo(k)}<span class="psn">${esc(sname(k))}</span><span class="psm">${arr.length} ${arr.length===1?"Angebot":"Angebote"}${km!=null?" · "+kmTxt(km):""}${until(arr)?" · bis "+until(arr):""}</span></summary>
       ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
         <div class="prow${oneDay(r)?" oneday":""}"><img class="px aopen" src="${icon(r.art,r.grp)}" alt="" data-art="${esc(r.art||r.product)}">
-          <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${esc(r.product)}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
+          <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${favStar(r.art)}${esc(pn(r))}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
             <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}${(()=>{const o=r.art&&elseMin(r);return o&&o.refPrice<r.refPrice*0.995?` · <span class="wg">${o.retailer===r.retailer?`hier ohne Angebot günstiger: ${eur(o.refPrice)}`:`woanders günstiger: ${esc(sname(o.retailer))} ${eur(o.refPrice)}`}</span>`:""})()}</div></div>
           ${s>=.05?`<span class="pct">−${Math.round(s*100)} %</span>`:""}
           <strong class="pp">${eur(r.price)}</strong>
@@ -603,8 +619,8 @@ function openProduct(x){
   const others=lastVis.filter(o=>o.art===r.art&&o.unit===r.unit&&o.offerId!==r.offerId).sort((a,b)=>a.refPrice-b.refPrice).slice(0,6);
   pov.innerHTML=`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-labelledby="ptitle">
     <button type="button" class="pclose" data-act="pclose" aria-label="Schließen">×</button>
-    <div class="phead"><div class="pimg">${photo?`<img class="photo" src="${photo}" alt="Prospektbild ${esc(r.product)}">`:`<img class="px" src="${icon(r.art,r.grp)}" alt="">`}</div>
-      <div><div class="pst">${logo(r.retailer)}${esc(sname(r.retailer))}</div><h3 id="ptitle">${esc(r.product)}</h3>${r.brand?`<div class="meta">${esc(r.brand)}</div>`:""}<div>${pills(r)}</div></div></div>
+    <div class="phead"><div class="pimg">${photo?`<img class="photo" src="${photo}" alt="Prospektbild ${esc(pn(r))}">`:`<img class="px" src="${icon(r.art,r.grp)}" alt="">`}</div>
+      <div><div class="pst">${logo(r.retailer)}${esc(sname(r.retailer))}</div><h3 id="ptitle">${esc(pn(r))}</h3>${r.disp?`<div class="meta">Im Prospekt: ${esc(r.product)}</div>`:""}${r.brand?`<div class="meta">${esc(r.brand)}</div>`:""}<div>${pills(r)}</div></div></div>
     <div class="pprice"><span class="pnow">${eur(r.price)}</span>${r.oldPrice?`<span class="strike">${eur(r.oldPrice)}</span>`:""}<span class="pbadge">−${Math.round(x.d*100)} % · spart ${eur(x.save)}</span></div>
     <div class="pgrid">
       <div><span>Grundpreis</span><b>${eur(r.refPrice)} je ${esc(unitTxt)}</b></div>
@@ -615,9 +631,9 @@ function openProduct(x){
     </div>
     ${r.description?`<p class="pdesc">${esc(r.description)}</p>`:""}
     ${spark(r,unitTxt)}
-    ${same.length?`<h4>Gleiches Produkt (EAN ${esc(r.ean)})</h4><div class="tablewrap"><table class="offers"><tbody>${same.map(o=>`<tr><td><span class="st">${logo(o.retailer)}${esc(sname(o.retailer))}</span></td><td class="pname">${esc(o.product)}</td><td class="num">${eur(o.price)}</td></tr>`).join("")}</tbody></table></div>`:""}
+    ${same.length?`<h4>Gleiches Produkt (EAN ${esc(r.ean)})</h4><div class="tablewrap"><table class="offers"><tbody>${same.map(o=>`<tr><td><span class="st">${logo(o.retailer)}${esc(sname(o.retailer))}</span></td><td class="pname">${esc(pn(o))}</td><td class="num">${eur(o.price)}</td></tr>`).join("")}</tbody></table></div>`:""}
     ${shopHtml(r)}
-    ${others.length?`<h4>Andere Preise für ${esc(r.art)}</h4><div class="tablewrap"><table class="offers"><tbody>${others.map(o=>`<tr><td><span class="st">${logo(o.retailer)}${esc(sname(o.retailer))}</span></td><td class="pname">${esc(o.product)}${pills(o)}</td><td class="num">${eur(o.refPrice)}<div class="meta">je ${esc(UNIT[o.unit]||o.unit)}</div></td></tr>`).join("")}</tbody></table></div>`:""}
+    ${others.length?`<h4>Andere Preise für ${esc(r.art)}</h4><div class="tablewrap"><table class="offers"><tbody>${others.map(o=>`<tr><td><span class="st">${logo(o.retailer)}${esc(sname(o.retailer))}</span></td><td class="pname">${esc(pn(o))}${pills(o)}</td><td class="num">${eur(o.refPrice)}<div class="meta">je ${esc(UNIT[o.unit]||o.unit)}</div></td></tr>`).join("")}</tbody></table></div>`:""}
     <div class="dbtns">${r.offerId>0?`<a class="plink" href="https://www.marktguru.de/offers/${r.offerId}" target="_blank" rel="noopener">Bei marktguru ansehen</a>`:""}${r.kind==="angebot"?`<button type="button" data-gone="${r.offerId}">Nicht gefunden</button>`:""}<button type="button" class="pri" data-act="padd">Auf die Einkaufsliste</button></div>
   </div>`;
   const im=pov.querySelector("img.photo");if(im)im.onerror=()=>{im.className="px";im.src=icon(r.art,r.grp)};
@@ -794,6 +810,7 @@ function applyData(data,fdata){
      rows=out}
     // Artikelname aus deiner Artikelliste (vom n8n-Workflow gesetzt), sonst die eigene Erkennung
     rows.forEach(r=>r.art=r.artKI||article(r));
+    rows.forEach(r=>{const d=dispName(r);if(d&&d!==r.product)r.disp=d});
     // Apfelschorle ist ein eigener Artikel (bis zum nächsten Lauf noch unter Äpfel einsortiert)
     rows.forEach(r=>{if(/apfel(saft)?-?schorle/i.test(r.product)){r.art="Apfelschorle";r.grp="Getränke"}});
     // Feste Markenwahl je Artikel: nur diese Produkte erscheinen
@@ -1263,7 +1280,7 @@ function openArt(art,editing){
       ${h.iss?`<div class="aleg"><span><i class="${h.plant?"ring":""}"></i>Das isst du: ${esc(h.iss)}</span></div>`:h.needCut?`<div class="atip">Welches Stück? Ergänze in der Einordnung z. B. Brust, Keule oder Bauch, dann zeigt die App, wo es sitzt.</div>`:""}
       ${h.fakt?`<div class="atip">${esc(h.fakt)}</div>`:""}</div>`}
 const el=document.getElementById("adlg");
-  el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${artNr(art)?`<span class="anr">Nr. ${artNr(art)}</span> `:""}${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
+  el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${artNr(art)?`<span class="anr">Nr. ${artNr(art)}</span> `:""}${esc(art)} <button type="button" class="afav${isFav(art)?" on":""}" aria-pressed="${isFav(art)}" title="${isFav(art)?"Favorit entfernen":"Als Favorit markieren"}">${isFav(art)?"★":"☆"}</button>${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
       <button type="button" class="aclose" aria-label="Schließen">×</button></div>
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
@@ -1274,6 +1291,7 @@ const el=document.getElementById("adlg");
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
 `;
   const ov=document.getElementById("aovl");ov.hidden=false;el.querySelector(".aclose").onclick=()=>{ov.hidden=true};
+  el.querySelector(".afav").onclick=()=>{pick.fav=Array.isArray(pick.fav)?pick.fav:[];const i=pick.fav.indexOf(art);if(i>=0)pick.fav.splice(i,1);else pick.fav.push(art);savePick();openArt(art);render()};
   // Einordnung, Kategorien und für wen direkt hier ändern
   const box=el.querySelector(".aed");let pf=p.slice(),kats=new Set(i.kat&&i.kat.length?i.kat:katGuess(art,"")),fuer=i.fuer||"beide";
   const paint=()=>{const own=new Set(Object.values(artinfo.map).flatMap(x=>x.kat||[]));

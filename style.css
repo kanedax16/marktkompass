@@ -524,3 +524,7 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .sb0{border:1px solid var(--line);background:var(--surface);border-radius:6px;font:inherit;font-size:12px;font-weight:700;width:26px;height:26px;margin-right:4px;cursor:pointer;color:var(--muted)}
 .sb0.on{background:#b3261e;border-color:#b3261e;color:#fff}
 .anr{display:inline-block;font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px;vertical-align:middle;margin-right:4px}
+.pill.bio{background:#e3f1d8;color:#2f6e22;font-weight:700}
+.fstar{color:#e0a100}
+.afav{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:#b9bfb2;padding:0 2px;vertical-align:middle}
+.afav.on{color:#e0a100}

@@ -28,13 +28,13 @@ window.renderSpar=function(){
   const bald=si.filter(x=>x.ort==="kueche"&&x.state!=="ok"),tk=si.filter(x=>x.ort==="tk");
   const reste=(dishes||[]).filter(d=>d.reste);
   const E=enteNow();
-  const eRow=r=>`<li>${logo(r.retailer)} ${esc(r.product)} <b>${eur(r.refPrice)}/kg</b> <small>${eur(r.price)}</small></li>`;
+  const eRow=r=>`<li>${logo(r.retailer)} ${esc(pn(r))} <b>${eur(r.refPrice)}/kg</b> <small>${eur(r.price)}</small></li>`;
   el.innerHTML=`<div class="ehead"><div><h2>Sparhebel</h2><p class="hint">Alle Wege, beim Einkauf Geld zu sparen, mit euren echten Zahlen. Die großen Hebel stehen oben.</p></div></div>
   <div class="shtop"><div><small>Ausgegeben im ${now.toLocaleDateString("de-DE",{month:"long"})}</small><b>${eur(aus)}</b><small>${bm.length} Bons</small></div>
     <div><small>Rabatte auf Bons</small><b>${eur(rab)}</b></div><div><small>Saveback, 1 %</small><b>${eur(save)}</b><small>höchstens 15 €</small></div></div>
   ${card("big","1. Planen nach Angeboten",top.length?`${top.length} lohnen sich, bis ${eur(tsum)}`:"gerade nichts Besonderes",
     `<p>Lieblingsgerichte dann kochen, wenn die Hauptzutat im Angebot ist. Das bringt grob 10 bis 20 %.</p>
-    ${top.length?`<ul class="shl">${top.slice(0,5).map(x=>`<li>${logo(x.r.retailer)} <span class="aopen" data-art="${esc(x.r.art||x.r.product)}">${esc(x.r.product)}</span> <b>−${Math.round(x.d*100)} %</b> <small>spart ${eur(x.save)}</small></li>`).join("")}</ul>`:""}
+    ${top.length?`<ul class="shl">${top.slice(0,5).map(x=>`<li>${logo(x.r.retailer)} <span class="aopen" data-art="${esc(x.r.art||x.r.product)}">${esc(pn(x.r))}</span> <b>−${Math.round(x.d*100)} %</b> <small>spart ${eur(x.save)}</small></li>`).join("")}</ul>`:""}
     <button type="button" class="sbtn" data-go="deals">Alle Angebote</button>`,true)}
   ${card("big","2. Ganzes Tier kaufen und zerlegen","etwa 30 % pro Kilo Fleisch",
     `<p>Eine ganze Ente kostete bei Kaufland 11,53 €, bei etwa 2,2 kg rund 5,20 € pro Kilo. Davon sind etwa 1,2 kg Brust und Keulen.</p>
