@@ -195,6 +195,7 @@ function render(){
   if(st.view==="prosp"){renderProsp(now);return}
   if(st.view==="pruef"){renderPruef();return}
   if(st.view==="essen"){renderEssen();return}
+  if(st.view==="vorrat"){renderVorrat();return}
   const list=document.getElementById("list");
   if(!rows.length)return;
   const vis=rows.map(r=>({...r,st:status(r,now)})).filter(r=>{
@@ -401,9 +402,10 @@ views.forEach(b=>b.onclick=()=>{st.view=b.dataset.v;lsSet("bpf_view",st.view);re
 function applyView(){
   if(st.view==="pruef"&&!(typeof pruef!=="undefined"&&pruef&&pruef.on))st.view="deals";
   if(st.view==="essen"&&!(typeof essen!=="undefined"&&essen&&essen.on))st.view="deals";
-  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",ess=st.view==="essen",deals=!shop&&!sai&&!pro&&!pru&&!ess;
+  if(st.view==="vorrat"&&!(typeof vorrat!=="undefined"&&vorrat&&vorrat.on))st.view="deals";
+  const shop=st.view==="shop",sai=st.view==="saison",pro=st.view==="prosp",pru=st.view==="pruef",ess=st.view==="essen",vor=st.view==="vorrat",deals=!shop&&!sai&&!pro&&!pru&&!ess&&!vor;
   views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
-  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;
+  document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;document.getElementById("vorratv").hidden=!vor;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
 }
 
@@ -787,10 +789,9 @@ function renderEssen(){
   const nope=[...by.entries()].filter(([,o])=>o.x>o.g).slice(0,8);
   const days=[];for(const m of ms){let d=days.find(x=>x.d===m.datum);if(!d){d={d:m.datum,l:[]};days.push(d)}d.l.push(m)}
   const who=m=>m.rolle===essen.role?"du":"Mitbewohner:in";
-  el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Was zu Hause ist, was bald weg muss, und was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
+  el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Tragt ein, was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
   ${fav.length||nope.length?`<section class="elike">${fav.length?`<div><h3>Gern gegessen</h3><div class="echips">${fav.map(([n,o])=>`<button type="button" class="chip" data-quick="${esc(n)}">${esc(n)}${o.g>1?` <small>${o.g}×</small>`:""}</button>`).join("")}</div></div>`:""}${nope.length?`<div><h3>Kommt nicht so an</h3><div class="echips">${nope.map(([n])=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div>`:""}</section>`:""}
   <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,who(m),m.zutaten].filter(Boolean).join(" · "))}</div></div>${m.urteil?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
-  renderVorrat();
 }
 function openEssen(pre){
   essen.sel={dish:pre||"",urteil:"",mahlzeit:mzNow(),tag:0,foto:""};
@@ -914,7 +915,8 @@ function stockItems(){
 }
 function homeNote(n){if(!vorrat.on)return "";const a=normW(n);if(!a)return "";
   const it=stockItems().find(x=>normW(x.art||x.name)===a);return it?` · <span class="home">zu Hause seit ${esc(dShort(it.datum))}</span>`:""}
-async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[]};render()}catch(e){}}
+async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[]};
+  document.getElementById("vorratbtn").hidden=false;if(lsGet("bpf_view","")==="vorrat")st.view="vorrat";render()}catch(e){}}
 async function saveVorrat(){if(!window.MK_VORRAT)return;
   // Alte Markierungen aufräumen, damit der Zustand klein bleibt
   const lim=isoDay(90);for(const [k,d] of Object.entries(vorrat.st.gone))if(d<lim)delete vorrat.st.gone[k];
@@ -930,19 +932,20 @@ function ideas(bald){
   return out.length?`<div class="videa">Idee: ${out.slice(0,3).map(x=>`<button type="button" class="chip" data-quick="${esc(x.n)}">${esc(x.n)}</button> <small>mit ${esc(x.hit.join(", "))}</small>`).join(" ")}</div>`:"";
 }
 function renderVorrat(){
-  if(!vorrat.on)return;const host=document.getElementById("essen");if(!host)return;
-  let el=document.getElementById("vorrat");if(!el){el=document.createElement("section");el.id="vorrat";el.className="vorrat";const head=host.querySelector(".ehead");head.insertAdjacentElement("afterend",el)}
+  if(!vorrat.on)return;const el=document.getElementById("vorratv");if(!el)return;
   const its=stockItems(),bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
   const row=x=>`<div class="vi ${x.state}"><img class="px" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt=""><div class="vt"><div class="vn">${esc(x.name)}</div><div class="vd">${esc([x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",`seit ${dShort(x.datum)}`,x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div><button type="button" class="vleer" data-k="${esc(x.key)}">leer</button></div>`;
-  el.innerHTML=`<h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
+  el.innerHTML=`<div class="ehead"><div><h2>Vorrat</h2><p class="hint">Was zu Hause ist und bald weg muss. Füllt sich aus euren Kassenbons, was ihr im Tagebuch esst, zieht die App ab.</p></div></div>
+  <h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
   ${!its.length?`<p class="hint">${(bons.list||[]).length?"Alles verbraucht, oder noch nichts eingetragen.":"Fotografiert eure Kassenbons im Reiter Einkaufen, dann füllt sich der Vorrat von selbst."} Was ihr esst, zieht die App ab.</p>`:""}
   ${bald.length?`<div class="vbox bald"><div class="vh">Bald verbrauchen</div>${bald.map(row).join("")}${ideas(bald)}</div>`:""}
   ${rest.length?`<details class="vbox"><summary class="vh">Noch da <small>${rest.length}</small></summary>${rest.map(row).join("")}</details>`:""}
   <form class="vadd" id="vadd"><input id="vnew" list="artlist" placeholder="Etwas ohne Bon ergänzen, z. B. Eier" aria-label="Vorrat ergänzen" autocomplete="off"><button type="submit" aria-label="Hinzufügen">+</button></form>`;
 }
 (function wireVorrat(){
-  const host=document.getElementById("essen");if(!host)return;
-  host.addEventListener("click",e=>{const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);renderVorrat();saveVorrat()});
+  const host=document.getElementById("vorratv");if(!host)return;
+  host.addEventListener("click",e=>{const q=e.target.closest("[data-quick]");if(q){openEssen(q.dataset.quick);return}
+    const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);renderVorrat();saveVorrat()});
   host.addEventListener("submit",e=>{if(e.target.id!=="vadd")return;e.preventDefault();const v=document.getElementById("vnew").value.trim();if(!v)return;
     const art=typeof artFor==="function"?artFor(v):"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0)});renderVorrat();saveVorrat()});
 })();
