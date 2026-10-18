@@ -923,13 +923,13 @@ initBons();
 // Vorrat (Web-Version): füllt sich aus den Kassenbons, Gerichte aus dem Tagebuch ziehen ab, "leer" tippen korrigiert.
 // Haltbarkeit ist eine Schätzung je Artikel. Geteilter Zustand (leer markiert, von Hand ergänzt) liegt im Haushalt.
 var vorrat={on:false,st:{gone:{},extra:[]},saving:false,kat:""};
-const SHELF=[[/salat|rucola|spinat|kresse|sprossen|kräuter|basilikum|petersilie|schnittlauch|koriander|minze/i,4],[/beere|himbeer|erdbeer|heidelbeer|brombeer|kirsch/i,3],
+const SHELF=[[/zuckermais|maiskolben|\bmais\b|zuckerschote/i,5],[/salat|rucola|spinat|kresse|sprossen|kräuter|basilikum|petersilie|schnittlauch|koriander|minze/i,4],[/beere|himbeer|erdbeer|heidelbeer|brombeer|kirsch/i,3],
  [/pilz|champignon|seitling/i,4],[/hack/i,1],[/lachs|fisch|forelle|garnele|dorade|kabeljau|seelachs|muschel|tintenfisch/i,2],[/tiefgek|tk\b|tiefgefr/i,180],
  [/hähnchen|pute|ente|gans|rind|kalb|lamm|steak|fleisch/i,3],[/milch|joghurt|kefir|skyr|quark|sahne|buttermilch/i,10],[/eier/i,21],[/butter/i,30],
  [/käse|parmesan|parmigiano|bergkäse|gouda|feta|mozzarella|burrata|brie/i,14],[/kartoffel|zwiebel|knoblauch|schalotte|kürbis|kohl\b|weißkohl|rotkohl/i,30],
  [/äpfel|apfel|birne|zitrone|orange|clementine|mandarine|grapefruit/i,21],[/banane|avocado|mango|kiwi|tomate|gurke|paprika|zucchini|aubergine|brokkoli|blumenkohl/i,6],
  [/möhre|karotte|sellerie|lauch|rote bete|fenchel|kohlrabi|rettich|radieschen/i,10],[/brot|brötchen/i,4],
- [/nuss|nüsse|mandel|cashew|linsen|kichererbsen|bohnen getr|reis|nudel|hafer|mehl|öl\b|olivenöl|essig|zucker|salz|konserve|im glas|dose|schorle|saft/i,180]];
+ [/nuss|nüsse|mandel|cashew|linsen|kichererbsen|bohnen getr|reis|nudel|hafer|mehl|öl\b|olivenöl|essig|\bzucker\b|\bsalz\b|kidney|pistazie|fruchtgummi|gummibär|schokolade|konserve|im glas|dose|schorle|saft/i,180]];
 const GRP_SHELF={"Obst":7,"Gemüse":7,"Fleisch":3,"Fisch":2,"Milch & Eier":10,"Käse":14,"Feinkost":10,"Nüsse & Hülsenfrüchte":180,"Getreide & Flocken":180,"Saaten & Öle":180,"Vorrat":180,"Getränke":60,"Haushalt":365};
 function shelfDays(art,name){const t=(art||"")+" "+(name||"");for(const [rx,d] of SHELF)if(rx.test(t))return d;const g=art&&typeof grpOf==="function"?grpOf(art):null;return GRP_SHELF[g]||14}
 const addDays=(iso,n)=>{const [Y,M,D]=String(iso).split("-").map(Number);const d=new Date(Y,M-1,D+n);return isoDay(Math.round((new Date().setHours(0,0,0,0)-d)/864e5))};
