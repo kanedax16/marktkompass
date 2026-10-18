@@ -330,7 +330,9 @@ const cap=w=>w.replace(/(^|\s)\S/g,c=>c.toUpperCase());
 // Werbewörter und doppelte Namen weglassen ("Zarte Kalbsschnitzel" → "Kalbsschnitzel", "Wolfsbarsch Loup de Mer" → "Wolfsbarsch"); der Prospekttext steht weiter auf der Produktseite
 const WERBUNG=/\b(zarte?[snr]?|frische?[snr]?|saftige?[snr]?|feine?[snr]?|knackige?[snr]?|aromatische?[snr]?|leckere?[snr]?|köstliche?[snr]?|ausgesuchte?[snr]?|beste?[snr]?|premium|delikatess|extra zarte?[snr]?|herzhafte?[snr]?|unsere heimat|gutes aus der region|meine metzgerei|metzgerfrisch|vom feinsten)\b/gi;
 const SYNONYM=[[/\s*loup de mer\b/i,""],[/\s*dorade royale?\b/i," Dorade"],[/\bbranzino\b/i,"Wolfsbarsch"]];
-function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
+// Bio steht nicht im Namen, sondern als grünes Bio-Siegel daneben
+const BIOWORT=/(\b(rewe|edeka|k|gut|aldi|lidl)[- ]?bio\b|\bbio\b-?|\böko\b-?)/gi;
+function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(BIOWORT," ");x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
 function dispName(r){if(!r.art||!/^(Obst|Gemüse)$/.test(r.grp||""))return cleanName(r.product);
   if(/hokkaido/i.test(r.art)&&!SORTEN[0][1].test(r.product))return "Kürbis (Hokkaido)";
   const base=SING[r.art]||r.art,sv=SORTEN.find(([b])=>b===base);const m=sv&&String(r.product).match(sv[1]);
@@ -339,7 +341,7 @@ const pn=r=>r.disp||r.product;
 // Favoriten (Stern) je Artikel, gemeinsam gespeichert in den Einstellungen
 const isFav=a=>!!a&&Array.isArray(pick.fav)&&pick.fav.includes(a);
 const favStar=a=>isFav(a)?`<span class="fstar" title="Favorit">★</span> `:"";
-function pills(o){let h="";if(o.disp&&/^(Obst|Gemüse)$/.test(o.grp||"")&&isBio(o))h+=`<span class="pill bio">Bio</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
+function pills(o){let h="";if(isBio(o))h+=`<span class="pill bio">Bio</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
 
 // ===== Einkaufen: gespeicherte Gerichte und Einkaufsliste =====
 const UNITS=["g","kg","Stk","ml","l","Bund","Pck"];
