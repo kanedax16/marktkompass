@@ -332,7 +332,9 @@ const WERBUNG=/\b(zarte?[snr]?|frische?[snr]?|saftige?[snr]?|feine?[snr]?|knacki
 const SYNONYM=[[/\s*loup de mer\b/i,""],[/\s*dorade royale?\b/i," Dorade"],[/\bbranzino\b/i,"Wolfsbarsch"]];
 // Bio steht nicht im Namen, sondern als grünes Bio-Siegel daneben
 const BIOWORT=/(\b(rewe|edeka|k|gut|aldi|lidl)[- ]?bio\b|\bbio\b-?|\böko\b-?)/gi;
-function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(BIOWORT," ").replace(/\b(tiefgek(ü|ue)hlt|tiefk(ü|ue)hl(ware)?|tk)\b/gi," ");x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
+// "vegan" nur behalten, wo es einen Unterschied macht (Ersatzprodukte); bei Nüssen, Obst usw. ist es überflüssig
+const VEGAN_OK=/wurst|käse|kaese|schnitzel|burger|aufschnitt|hack|joghurt|milch|drink|frikadelle|nugget|filet|salami|schinken|butter|sahne|quark|bratling|gyros|döner|eis\b|mayo|aufstrich|pudding/i;
+function cleanName(t){let x=String(t||"");for(const [re,b] of SYNONYM)x=x.replace(re,b);x=x.replace(BIOWORT," ").replace(/\b(tiefgek(ü|ue)hlt|tiefk(ü|ue)hl(ware)?|tk)\b/gi," ");x=x.replace(/\bxxl\b/gi," ");if(!VEGAN_OK.test(x))x=x.replace(/\bvegane?[snr]?\b/gi," ");x=x.replace(WERBUNG," ").replace(/\s{2,}/g," ").replace(/^[\s,\-–]+|[\s,\-–]+$/g,"").trim();return x?x.charAt(0).toUpperCase()+x.slice(1):String(t||"")}
 function dispName(r){if(!r.art||!/^(Obst|Gemüse)$/.test(r.grp||""))return cleanName(r.product);
   if(/hokkaido/i.test(r.art)&&!SORTEN[0][1].test(r.product))return "Kürbis (Hokkaido)";
   const base=SING[r.art]||r.art,sv=SORTEN.find(([b])=>b===base);const m=sv&&String(r.product).match(sv[1]);
@@ -585,6 +587,9 @@ function renderProsp(now){
     return true});
   const L=merged()?st.laden:"";
   if(L&&offers.some(r=>r.retailer===L)){const mine=offers.filter(r=>r.retailer===L);offers.length=0;offers.push(...mine)}
+  // Gleiches Produkt im selben Laden (z. B. diese und nächste Woche) nur einmal zeigen, das spätere Angebot als Hinweis
+  {const g=new Map();for(const r of offers){const k=[r.retailer,cleanName(r.product).toLowerCase(),String(r.brand).toLowerCase(),amt(r)].join("|");if(!g.has(k))g.set(k,[]);g.get(k).push(r)}
+    offers.length=0;for(const l of g.values()){l.sort((a,b)=>(a.st==="soon")-(b.st==="soon")||String(a.validFrom).localeCompare(String(b.validFrom)));const h={...l[0]};h.later=h.st==="soon"?[]:l.slice(1).filter(x=>x.st==="soon"&&x.price!==h.price);offers.push(h)}}
   if(!offers.length){el.innerHTML=`<div class="empty">Gerade keine Angebote${st.q?` zu „${esc(st.q)}“`:""}. Neue Prospekte kommen jede Nacht um 3:07 Uhr.</div>`;return}
   const by={};offers.forEach(r=>(by[r.retailer]=by[r.retailer]||[]).push(r));
   const near=k=>{const f=fils.find(x=>x.retailer===k&&x.km!=null);return f?f.km:null};
@@ -599,7 +604,7 @@ function renderProsp(now){
       ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
         <div class="prow${oneDay(r)?" oneday":""}">${pxw(`<img class="px aopen" src="${icon(r.art,r.grp)}" alt="" data-art="${esc(r.art||r.product)}">`,r)}
           <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${favStar(r.art)}${esc(pn(r))}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r,1)}</div>
-            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}${(()=>{const o=r.art&&elseMin(r);return o&&o.refPrice<r.refPrice*0.995?` · <span class="wg">${o.retailer===r.retailer?`hier ohne Angebot günstiger: ${eur(o.refPrice)}`:`woanders günstiger: ${esc(sname(o.retailer))} ${eur(o.refPrice)}`}</span>`:""})()}</div></div>
+            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}${(r.later||[]).map(x=>` · <b class="later">ab ${esc(dfmt(new Date(x.validFrom)))}: ${eur(x.price)}</b>`).join("")}${(()=>{const o=r.art&&elseMin(r);return o&&o.refPrice<r.refPrice*0.995?` · <span class="wg">${o.retailer===r.retailer?(o.kind==="angebot"?`hier günstiger: ${esc(o.brand||pn(o))} ${eur(o.refPrice)}`:`hier ohne Angebot günstiger: ${eur(o.refPrice)}`):`woanders günstiger: ${esc(sname(o.retailer))} ${eur(o.refPrice)}`}</span>`:""})()}</div></div>
           ${s>=.05?`<span class="pct">−${Math.round(s*100)} %</span>`:""}
           <strong class="pp">${eur(r.price)}</strong>
           <button type="button" class="addb" data-art="${esc(r.art||r.product)}" data-u="${esc(r.unit)}" aria-label="${esc(r.art||r.product)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button></div>`).join("")).join("")}
@@ -816,7 +821,7 @@ function applyData(data,fdata){
      rows=out}
     // Artikelname aus deiner Artikelliste (vom n8n-Workflow gesetzt), sonst die eigene Erkennung
     rows.forEach(r=>r.art=r.artKI||article(r));
-    rows.forEach(r=>{const d=dispName(r);if(d&&d!==r.product)r.disp=d});
+    rows.forEach(r=>{const d=dispName(r);if(d&&d!==r.product)r.disp=d;if(/\bxxl\b/i.test(r.product)&&!/\bxxl\b/i.test(r.brand))r.brand=(r.brand?r.brand+" ":"")+"XXL"});
     // Apfelschorle ist ein eigener Artikel (bis zum nächsten Lauf noch unter Äpfel einsortiert)
     rows.forEach(r=>{if(/apfel(saft)?-?schorle/i.test(r.product)){r.art="Apfelschorle";r.grp="Getränke"}});
     // Feste Markenwahl je Artikel: nur diese Produkte erscheinen
