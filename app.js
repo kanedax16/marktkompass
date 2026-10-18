@@ -959,17 +959,16 @@ function assignForm(btn){
   const owner=(typeof essen!=="undefined"&&essen.role==="owner")||!!window.MK_PRUEF&&typeof pruef!=="undefined"&&pruef.on;
   const f=document.createElement("form");f.className="bform";
   f.innerHTML=`<input list="artlist" placeholder="Artikel wählen${owner?" oder neu eingeben":""}" value="${esc(z.artikel||"")}" aria-label="Artikel">
-    <select hidden aria-label="Gruppe für neuen Artikel">${GROUPS.map(g=>`<option${g==="Vorrat"?" selected":""}>${esc(g)}</option>`).join("")}</select>
     <button type="submit">OK</button><button type="button" class="bx">×</button><small class="bmsg"></small>`;
-  td.appendChild(f);const inp=f.querySelector("input"),sel=f.querySelector("select"),msg=f.querySelector(".bmsg");inp.focus();inp.select();
-  const upd=()=>{const v=inp.value.trim();const neu=v&&!knownArts().has(v);sel.hidden=!(neu&&owner);msg.textContent=neu?(owner?"Neuer Artikel, wähle die Gruppe":"Bitte einen Artikel aus der Liste wählen"):""};
+  td.appendChild(f);const inp=f.querySelector("input"),msg=f.querySelector(".bmsg");inp.focus();inp.select();
+  const upd=()=>{const v=inp.value.trim();const neu=v&&!knownArts().has(v);msg.textContent=neu?(owner?"Neuer Artikel, wird in deiner Artikelliste angelegt":"Bitte einen Artikel aus der Liste wählen"):""};
   inp.oninput=upd;upd();
   f.querySelector(".bx").onclick=()=>f.remove();
   f.onsubmit=async e=>{e.preventDefault();const v=inp.value.trim();if(!v)return;const neu=!knownArts().has(v);if(neu&&!owner){upd();return}
-    f.querySelectorAll("button,input,select").forEach(x=>x.disabled=true);msg.textContent="wird gespeichert …";
-    const ok=await window.MK_BON.assign({id:z.id,artikel:v,neu,gruppe:sel.value,text:z.text,laden:b.laden,einheit:z.einheit,beispiel:`${z.name||z.text} (${sname(b.laden)}) ${eur(z.preis)}`}).catch(()=>false);
+    f.querySelectorAll("button,input").forEach(x=>x.disabled=true);msg.textContent="wird gespeichert …";
+    const ok=await window.MK_BON.assign({id:z.id,artikel:v,neu,text:z.text,laden:b.laden,einheit:z.einheit,beispiel:`${z.name||z.text} (${sname(b.laden)}) ${eur(z.preis)}`}).catch(()=>false);
     if(ok){z.artikel=v;drawBons();const d=[...document.querySelectorAll("details.bon")].find(x=>x.querySelector(`[data-b="${b.id}"]`));if(d)d.open=true;
       if(neu){const o=document.createElement("option");o.value=v;document.getElementById("artlist").appendChild(o)}}
-    else{f.querySelectorAll("button,input,select").forEach(x=>x.disabled=false);msg.textContent="Speichern hat nicht geklappt."}};
+    else{f.querySelectorAll("button,input").forEach(x=>x.disabled=false);msg.textContent="Speichern hat nicht geklappt."}};
 }
 document.getElementById("bons")&&document.getElementById("bons").addEventListener("click",e=>{const b=e.target.closest(".bset");if(b){e.preventDefault();assignForm(b)}});
