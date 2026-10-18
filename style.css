@@ -507,3 +507,6 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .hier .hh{display:flex;align-items:center;gap:8px;font-size:14px}.hier .hh .logo{height:22px;max-width:60px;object-fit:contain}
 .hier ol{margin:8px 0 0;padding-left:20px}.hier li{padding:3px 0}.hier li small{color:var(--muted);display:block}
 .hier .hpct{font-size:12px;font-weight:700;color:#fff;background:#1f7a3a;border-radius:6px;padding:1px 6px}.hier .hl{margin:8px 0 0;font-size:13px}
+.prow .wg{color:#a4461d;font-weight:600}
+.ahist.apr tr.best td{font-weight:600}
+.ahist.apr td{padding-right:8px}.ahist.apr td:first-child{white-space:nowrap}

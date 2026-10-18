@@ -267,6 +267,13 @@ function amt(r){
   if(r.unit==="Stk"){const k=Math.round(q);return k>=1?k+(k===1?" Stück":" Stück"):""}
   return"";
 }
+// Günstigster Preis, den es gerade woanders für denselben Artikel gibt (Angebote und Dauerpreise, nur eingeschaltete Läden)
+let elseCache=null;
+function elseMin(r){const now=new Date();
+  if(!elseCache||elseCache.n!==rows.length||elseCache.t!==Math.floor(now/6e4)){const m={};
+    for(const o of rows){if(!o.art||!(o.refPrice>0))continue;const s=status(o,now);if(s==="exp"||s==="soon"||!baseOk(o,now))continue;
+      const k=o.art+"|"+o.unit;(m[k]=m[k]||[]).push(o)}elseCache={n:rows.length,t:Math.floor(now/6e4),m}}
+  let best=null;for(const o of elseCache.m[r.art+"|"+r.unit]||[])if(o.retailer!==r.retailer&&(!best||o.refPrice<best.refPrice))best=o;return best}
 function steals(vis){
   const by={};vis.forEach(r=>{const k=r.art+"|"+r.unit;(by[k]=by[k]||[]).push(r)});
   // Üblicher Marktpreis je Artikel: Median der Dauer- und Normalpreise aus allen Läden (mindestens 3 Werte)
@@ -287,6 +294,8 @@ function steals(vis){
     if(!ref&&r.regRef>r.refPrice)ref={pct:1-r.refPrice/r.regRef,save:(r.regRef-r.refPrice)*pack,why:`sonst ${eur(r.regRef)} je ${u} im Laden`};
     if(!ref&&r.usualRef&&r.usualN>=2&&r.usualRef>r.refPrice)ref={pct:1-r.refPrice/r.usualRef,save:(r.usualRef-r.refPrice)*pack,why:`sonst meist ${eur(r.usualRef)} je ${u}`};
     if(!ref||ref.pct>.75||ref.pct<.05)continue;
+    // Kein Steal, wenn es denselben Artikel woanders gerade günstiger gibt
+    const oth=r.art&&elseMin(r);if(oth&&oth.refPrice<r.refPrice*0.995)continue;
     if(ref.pct<.15&&ref.save<1.5)continue;
     out.push({r,d:ref.pct,save:ref.save,why:ref.why,score:Math.max(ref.pct/.5,ref.save/5)});
   }
@@ -565,7 +574,7 @@ function renderProsp(now){
       ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
         <div class="prow${oneDay(r)?" oneday":""}"><img class="px aopen" src="${icon(r.art,r.grp)}" alt="" data-art="${esc(r.art||r.product)}">
           <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${esc(r.product)}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r)}</div>
-            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}</div></div>
+            <div class="meta">${amt(r)?"für "+amt(r)+" · ":""}${eur(r.refPrice)} je ${esc(UNIT[r.unit]||r.unit)}${r.oldPrice?` · statt ${eur(r.oldPrice)}`:""}${(()=>{const o=r.art&&elseMin(r);return o&&o.refPrice<r.refPrice*0.995?` · <span class="wg">woanders günstiger: ${esc(sname(o.retailer))} ${eur(o.refPrice)}</span>`:""})()}</div></div>
           ${s>=.05?`<span class="pct">−${Math.round(s*100)} %</span>`:""}
           <strong class="pp">${eur(r.price)}</strong>
           <button type="button" class="addb" data-art="${esc(r.art||r.product)}" data-u="${esc(r.unit)}" aria-label="${esc(r.art||r.product)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button></div>`).join("")).join("")}
@@ -1192,7 +1201,7 @@ function cowSvg(hi){const {w,h,px}=COW;const at=(x,y)=>x<0||y<0||x>=w||y>=h?".":
 // Artikelansicht: Einordnung, Herkunft am Tier, Preisverlauf aus euren Bons
 function openArt(art,editing){
   const i=artinfo.map[art]||{};const p=i.pfad&&i.pfad.length?i.pfad:pathGuess(art,"");
-  const now=new Date();const offs=(typeof rows!=="undefined"?rows:[]).filter(r=>r.art===art&&r.refPrice!=null&&status(r,now)!=="exp"&&baseOk(r,now)).sort((a,b)=>a.refPrice-b.refPrice).slice(0,5);
+  const now=new Date();const offs=(typeof rows!=="undefined"?rows:[]).filter(r=>r.art===art&&r.refPrice!=null&&status(r,now)!=="exp"&&baseOk(r,now)).sort((a,b)=>a.refPrice-b.refPrice).slice(0,8);
   const buys=[];for(const b of bons.list||[])for(const z of b.zeilen)if(z.artikel===art&&z.typ==="ware")buys.push({...z,laden:b.laden,datum:b.datum});
   buys.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
   const last=buys[0],v=(last&&last.verarbeitung)||i.ver||"";
@@ -1203,20 +1212,20 @@ function openArt(art,editing){
       ${hi?`<div class="aleg">${hi.split("").map(c=>`<span><i></i>${CUTN[c]}</span>`).join("")}</div><div class="atip">${esc(BEEFTIP[cut]||"")}</div>`
         :`<div class="atip">Welches Teilstück? Ergänze in der Einordnung nach "Rind" z. B. Suppenfleisch oder Gulasch, dann zeigt die App, wo es am Tier sitzt.</div>`}</div>`}
     else if(window.HERKUNFT){const h=HERKUNFT(art,p);
-    if(h)cowCard=`<div class="acard"><div class="lbl">${h.plant?"So wächst es":"Woher es kommt"}</div>${h.svg}
+    if(h&&!h.plant)cowCard=`<div class="acard"><div class="lbl">${h.plant?"So wächst es":"Woher es kommt"}</div>${h.svg}
       ${h.iss?`<div class="aleg"><span><i class="${h.plant?"ring":""}"></i>Das isst du: ${esc(h.iss)}</span></div>`:h.needCut?`<div class="atip">Welches Stück? Ergänze in der Einordnung z. B. Brust, Keule oder Bauch, dann zeigt die App, wo es sitzt.</div>`:""}
-      ${h.fakt?`<div class="atip">${esc(h.fakt)}</div>`:""}${h.saison||""}</div>`}
+      ${h.fakt?`<div class="atip">${esc(h.fakt)}</div>`:""}</div>`}
 const el=document.getElementById("adlg");
   el.innerHTML=`<div class="ahead"><img class="px" src="${icon(art,knownArts().has(art)?grpOf(art):null)}" alt=""><h3>${esc(art)}${v?` <span class="vb v-${v}">${v==="un"?"unverarbeitet":v}</span>`:""}${i.fuer&&i.fuer!=="beide"?` <span class="vb fu">${FUER[i.fuer]}</span>`:""}</h3>
       <button type="button" class="aclose" aria-label="Schließen">×</button></div>
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
     <div class="aed" hidden></div>
+    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist apr"><tbody>${offs.map((o,j)=>`<tr${j===0?' class="best"':""}><td>${logo(o.retailer)} ${esc(sname(o.retailer))}</td><td>${esc(o.product)}${o.kind==="angebot"?' <span class="vb fu">Angebot</span>':""}${j===0&&offs.length>1?' <span class="vb v-un">am günstigsten</span>':""}</td><td class="bp">${eur(o.price)}<small>${eur(o.refPrice)}/${esc(UNIT[o.unit]||o.unit)}</small></td></tr>`).join("")}</tbody></table>`:`<p class="hint">Gerade kein Preis in euren Läden.</p>`}
     ${/entenbrust|entenkeule/i.test(art)?`<p class="atip">Spartipp: Eine ganze Ente ist etwa 30 % günstiger pro Kilo Fleisch als Brust oder Keulen einzeln, Karkasse und Fett gibt es gratis. Zerlegen, Teile einfrieren, aus den Resten Knusprige Ente im Pita machen. Mehr im Reiter Sparen.</p>`:""}
     ${cowCard}
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
-    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist"><tbody>${offs.map(o=>`<tr><td>${logo(o.retailer)} ${esc(sname(o.retailer))}</td><td>${esc(o.product)}${o.kind==="angebot"?' <span class="vb fu">Angebot</span>':""}</td><td class="bp">${eur(o.price)}<small>${eur(o.refPrice)}/${esc(o.unit)}</small></td></tr>`).join("")}</tbody></table>`:""}
-    ${buys.length?`<div class="lbl">Eure Käufe</div><table class="ahist"><tbody>${buys.map(z=>`<tr><td>${esc(dd(z.datum))}</td><td>${esc(sname(z.laden))}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>`:""}`;
+`;
   const ov=document.getElementById("aovl");ov.hidden=false;el.querySelector(".aclose").onclick=()=>{ov.hidden=true};
   // Einordnung, Kategorien und für wen direkt hier ändern
   const box=el.querySelector(".aed");let pf=p.slice(),kats=new Set(i.kat&&i.kat.length?i.kat:katGuess(art,"")),fuer=i.fuer||"beide";
