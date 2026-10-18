@@ -464,3 +464,4 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .ssr span.now{outline:2px solid var(--fg);outline-offset:-1px}
 .s-H{background:#5d9a3c!important;color:#fff!important}.s-T{background:#a8cf86!important;color:#1b221d!important}.s-L{background:#c9b48a!important;color:#1b221d!important}.s-I{background:#b9d3e6!important;color:#1b221d!important}
 .ssl{display:flex;gap:8px;font-size:11px;color:var(--muted)}.ssl span{padding:0 5px;border-radius:3px}
+.vback{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--best);background:var(--best-soft);color:var(--best);border-radius:999px;padding:3px 10px;cursor:pointer;white-space:nowrap}

@@ -968,6 +968,14 @@ function ideas(bald){
   out.sort((a,b)=>b.score-a.score);
   return out.length?`<div class="videa">Idee: ${out.slice(0,3).map(x=>`<button type="button" class="chip" data-quick="${esc(x.n)}">${esc(x.n)}</button> <small>mit ${esc(x.hit.join(", "))}</small>`).join(" ")}</div>`:"";
 }
+// Leer markiert: letzte 14 Tage, mit "doch noch da" zum Zurückholen
+function goneHtml(){const lim=isoDay(14),out=[];
+  for(const [k,d] of Object.entries(vorrat.st.gone||{})){if(d<lim)continue;let name="";
+    if(k.startsWith("x|")){const x=(vorrat.st.extra||[]).find(e=>"x|"+e.id===k);name=x?x.name:""}
+    else{const [bid,i]=k.split("|");const b=(bons.list||[]).find(b=>String(b.id)===bid);const z=b&&b.zeilen[+i];name=z?(z.artikel||z.name):""}
+    if(name)out.push({k,name,d})}
+  if(!out.length)return "";out.sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+  return `<details class="vbox"${vorrat.openGone?" open":""} id="vgone"><summary class="vh">Leer markiert <small>${out.length}</small></summary>${out.map(x=>`<div class="vi"><div class="vt"><div class="vn">${esc(x.name)}</div><div class="vd">leer seit ${esc(dShort(x.d))}</div></div><button type="button" class="vback" data-k="${esc(x.k)}">doch noch da</button></div>`).join("")}</details>`}
 function renderVorrat(){
   if(!vorrat.on)return;const el=document.getElementById("vorratv");if(!el)return;
   const all=stockItems();
@@ -981,13 +989,15 @@ function renderVorrat(){
   ${!its.length?`<p class="hint">${(bons.list||[]).length?"Alles verbraucht, oder noch nichts eingetragen.":"Fotografiert eure Kassenbons im Reiter Einkaufen, dann füllt sich der Vorrat von selbst."} Was ihr esst, zieht die App ab.</p>`:""}
   ${bald.length?`<div class="vbox bald"><div class="vh">Bald verbrauchen</div>${bald.map(row).join("")}${ideas(bald)}</div>`:""}
   ${rest.length?`<details class="vbox"><summary class="vh">Noch da <small>${rest.length}</small></summary>${rest.map(row).join("")}</details>`:""}
+  ${goneHtml()}
   <form class="vadd" id="vadd"><input id="vnew" list="artlist" placeholder="Etwas ohne Bon ergänzen, z. B. Eier" aria-label="Vorrat ergänzen" autocomplete="off"><button type="submit" aria-label="Hinzufügen">+</button></form>`;
 }
 (function wireVorrat(){
   const host=document.getElementById("vorratv");if(!host)return;
   host.addEventListener("click",e=>{const q=e.target.closest("[data-quick]");if(q){openEssen(q.dataset.quick);return}
     const kb=e.target.closest("[data-kat]");if(kb){vorrat.kat=kb.dataset.kat;renderVorrat();return}
-    const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);renderVorrat();saveVorrat()});
+    const bk=e.target.closest(".vback");if(bk){delete vorrat.st.gone[bk.dataset.k];vorrat.openGone=true;renderVorrat();saveVorrat();return}
+    const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);vorrat.openGone=true;renderVorrat();saveVorrat()});
   host.addEventListener("submit",e=>{if(e.target.id!=="vadd")return;e.preventDefault();const v=document.getElementById("vnew").value.trim();if(!v)return;
     const art=typeof artFor==="function"?artFor(v):"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0)});renderVorrat();saveVorrat()});
 })();
