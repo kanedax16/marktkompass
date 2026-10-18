@@ -861,28 +861,41 @@ function dayLabel(iso){const t=isoDay(0),y=isoDay(1);if(iso===t)return "Heute";i
 // Bewertung je Person: wer hat gegessen, Sterne 0,5 bis 5 (gleichen Stern nochmal tippen = halber Stern weniger)
 const WER={beide:"Beide",p1:"Person 1",p2:"Person 2"};
 const stTxt=v=>String(v).replace(".",",")+" ★";
+function starEd(r){const eps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];
+  return `<div class="erow"><span class="lbl">Gegessen von</span>${Object.keys(WER).map(k=>`<button type="button" class="chip" data-rw="${k}" aria-pressed="${r.wer===k}">${WER[k]}</button>`).join("")}</div>
+    ${eps.map(p=>`<div class="erow"><span class="lbl">${WER[p]}</span><span class="stars"><button type="button" class="sb0${r.s[p]===0?" on":""}" data-sp="${p}" data-sn="0" aria-label="0 Sterne">0</button>${[1,2,3,4,5].map(n=>{const v=r.s[p]||0;return `<button type="button" class="sb${v>=n?" on":v>=n-.5?" half":""}" data-sp="${p}" data-sn="${n}" aria-label="${n} Sterne">★</button>`}).join("")}</span><small>${r.s[p]!=null?stTxt(r.s[p]):""}</small></div>`).join("")}`}
+function starClick(r,e){let b;
+  if(b=e.target.closest("[data-rw]")){r.wer=b.dataset.rw;return true}
+  if(b=e.target.closest("[data-sp]")){const p=b.dataset.sp,n=+b.dataset.sn;if(n===0)r.s[p]=r.s[p]===0?undefined:0;else r.s[p]=r.s[p]===n?n-.5:n;if(r.s[p]==null)delete r.s[p];return true}
+  return false}
+const starsOf=r=>{const ps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];const s={};for(const p of ps)if(r.s[p]!=null)s[p]=r.s[p];return s};
+// Wie gut kam eine Mahlzeit an: Schnitt der Sterne, sonst das alte Urteil
+const URT_ST={gern:4.5,okay:3,nein:1};
+function mealScore(m){const v=Object.values(m.sterne||{}).filter(x=>typeof x==="number");if(v.length)return v.reduce((a,b)=>a+b,0)/v.length;return URT_ST[m.urteil]??null}
+const noRepeat=m=>/nicht wiederholen/i.test(m.tags||"");
+const urtFromStars=s=>{const v=Object.values(s);if(!v.length)return "";const a=v.reduce((x,y)=>x+y,0)/v.length;return a>=3.5?"gern":a>=2?"okay":"nein"};
 function rateHtml(m){const s=m.sterne||{},wer=m.wer||"";const ps=wer==="p1"?["p1"]:wer==="p2"?["p2"]:["p1","p2"];
   const sum=ps.filter(p=>s[p]!=null).map(p=>`${WER[p]}: ${stTxt(s[p])}`).join(" · ");
   const ed=essen.rate&&essen.rate.id===m.id;
   if(!ed)return `<div class="erate">${wer&&wer!=="beide"?`<span class="ewer">nur ${WER[wer]}</span>`:""}${sum?`<span class="est">${esc(sum)}</span>`:""}<button type="button" class="erb" data-id="${esc(m.id)}">${sum||wer?"ändern":"Bewerten"}</button></div>`;
-  const r=essen.rate,eps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];
-  return `<div class="ered"><div class="erow"><span class="lbl">Gegessen von</span>${Object.keys(WER).map(k=>`<button type="button" class="chip" data-rw="${k}" aria-pressed="${r.wer===k}">${WER[k]}</button>`).join("")}</div>
-    ${eps.map(p=>`<div class="erow"><span class="lbl">${WER[p]}</span><span class="stars"><button type="button" class="sb0${r.s[p]===0?" on":""}" data-sp="${p}" data-sn="0" aria-label="0 Sterne">0</button>${[1,2,3,4,5].map(n=>{const v=r.s[p]||0;return `<button type="button" class="sb${v>=n?" on":v>=n-.5?" half":""}" data-sp="${p}" data-sn="${n}" aria-label="${n} Sterne">★</button>`}).join("")}</span><small>${r.s[p]!=null?stTxt(r.s[p]):""}</small></div>`).join("")}
+  return `<div class="ered">${starEd(essen.rate)}
     <div class="erow"><button type="button" class="sbtn" data-rsave="1">Speichern</button><button type="button" class="sbtn ghost" data-rx="1">Abbrechen</button><small class="ermsg"></small></div></div>`}
 function renderEssen(){
   const el=document.getElementById("essen");const ms=essen.meals;
   // Was ihr mögt: oft und gern gegessen, und was nicht ankommt
-  const by=new Map();for(const m of ms){const o=by.get(m.name)||{n:0,g:0,x:0};o.n++;if(m.urteil==="gern")o.g++;if(m.urteil==="nein")o.x++;by.set(m.name,o)}
-  const fav=[...by.entries()].filter(([,o])=>o.g>0&&o.g>=o.x).sort((a,b)=>b[1].g-a[1].g||b[1].n-a[1].n).slice(0,10);
-  const nope=[...by.entries()].filter(([,o])=>o.x>o.g).slice(0,8);
+  // Was ihr mögt: Schnitt der Sterne je Gericht (ohne Sterne zählt das alte Urteil)
+  const by=new Map();for(const m of ms){if(/getränk/i.test(m.art||""))continue;const o=by.get(m.name)||{n:0,sum:0,k:0,no:false};o.n++;const v=mealScore(m);if(v!=null){o.sum+=v;o.k++}if(noRepeat(m))o.no=true;by.set(m.name,o)}
+  for(const o of by.values())o.avg=o.k?o.sum/o.k:null;
+  const fav=[...by.entries()].filter(([,o])=>!o.no&&o.avg!=null&&o.avg>=3.5).sort((a,b)=>b[1].avg-a[1].avg||b[1].n-a[1].n).slice(0,10);
+  const nope=[...by.entries()].filter(([,o])=>o.no||(o.avg!=null&&o.avg<2)).slice(0,8);
   const days=[];for(const m of ms){let d=days.find(x=>x.d===m.datum);if(!d){d={d:m.datum,l:[]};days.push(d)}d.l.push(m)}
   const who=m=>m.rolle===essen.role?"du":"Mitbewohner:in";
   el.innerHTML=`<div class="ehead"><div><h2>Essen</h2><p class="hint">Tragt ein, was ihr gegessen habt. Daraus lernt die App, was euch schmeckt, und plant später die Woche danach.</p></div><button type="button" class="ebig" id="enew">+ Was gab's?</button></div>
-  ${fav.length||nope.length?`<section class="elike">${fav.length?`<div><h3>Gern gegessen</h3><div class="echips">${fav.map(([n,o])=>`<button type="button" class="chip" data-quick="${esc(n)}">${esc(n)}${o.g>1?` <small>${o.g}×</small>`:""}</button>`).join("")}</div></div>`:""}${nope.length?`<div><h3>Kommt nicht so an</h3><div class="echips">${nope.map(([n])=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div>`:""}</section>`:""}
-  <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,m.wer?"":who(m),m.zutaten].filter(Boolean).join(" · "))}</div>${rateHtml(m)}${m.rezept||m.warum?`<details class="erez"><summary>Rezept und warum es schmeckt</summary>${m.rezept?`<div class="ert">${esc(m.rezept)}</div>`:""}${m.warum?`<div class="ewh"><strong>Warum lecker:</strong> ${esc(m.warum)}</div>`:""}</details>`:""}</div>${m.urteil?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
+  ${fav.length||nope.length?`<section class="elike">${fav.length?`<div><h3>Gern gegessen</h3><div class="echips">${fav.map(([n,o])=>`<button type="button" class="chip" data-quick="${esc(n)}">${esc(n)} <small>${esc(stTxt(Math.round(o.avg*2)/2))}${o.n>1?` · ${o.n}×`:""}</small></button>`).join("")}</div></div>`:""}${nope.length?`<div><h3>Kommt nicht so an</h3><div class="echips">${nope.map(([n])=>`<span class="chip off">${esc(n)}</span>`).join("")}</div></div>`:""}</section>`:""}
+  <section><h3>Gegessen</h3>${days.length?days.map(d=>`<div class="eday"><div class="edl">${esc(dayLabel(d.d))}</div>${d.l.map(m=>`<div class="emeal"><div class="emain"><div class="ename">${esc(m.name)}</div><div class="ezut">${esc([m.mahlzeit,m.wer?"":who(m),m.zutaten].filter(Boolean).join(" · "))}</div>${rateHtml(m)}${m.rezept||m.warum?`<details class="erez"><summary>Rezept und warum es schmeckt</summary>${m.rezept?`<div class="ert">${esc(m.rezept)}</div>`:""}${m.warum?`<div class="ewh"><strong>Warum lecker:</strong> ${esc(m.warum)}</div>`:""}</details>`:""}</div>${m.urteil&&!Object.keys(m.sterne||{}).length?`<span class="eu u-${esc(m.urteil)}">${esc(URTEIL[m.urteil]||"")}</span>`:""}<button type="button" class="edel" data-id="${esc(m.id)}" aria-label="Eintrag löschen" title="Löschen">×</button></div>`).join("")}</div>`).join(""):`<p class="hint">Noch nichts eingetragen. Tippe auf „Was gab's?“. Nach ein paar Wochen weiß die App, was ihr gern esst.</p>`}</section>`;
 }
 function openEssen(pre){
-  essen.sel={dish:pre||"",urteil:"",mahlzeit:mzNow(),tag:0,foto:""};
+  essen.sel={dish:pre||"",urteil:"",mahlzeit:mzNow(),tag:0,foto:"",r:{wer:"beide",s:{}}};
   const o=document.getElementById("eovl");o.hidden=false;document.getElementById("etext").value="";document.getElementById("einfo").textContent="";
   document.getElementById("eprev").hidden=true;document.getElementById("efile").value="";drawEssenDlg();
 }
@@ -892,7 +905,7 @@ function drawEssenDlg(){
   document.getElementById("etag").innerHTML=["Heute","Gestern","Vorgestern"].map((t,i)=>`<button type="button" class="chip" data-tag="${i}" aria-pressed="${s.tag===i}">${t}</button>`).join("");
   const kd=knownDishes().slice(0,14);
   document.getElementById("edish").innerHTML=kd.length?kd.map(n=>`<button type="button" class="chip" data-dish="${esc(n)}" aria-pressed="${s.dish===n}">${esc(n)}</button>`).join(""):`<span class="hint">Eure Gerichte erscheinen hier, sobald ihr welche eintragt.</span>`;
-  document.getElementById("eurt").innerHTML=Object.entries(URTEIL).map(([k,v])=>`<button type="button" class="eub u-${k}" data-u="${k}" aria-pressed="${s.urteil===k}">${v}</button>`).join("");
+  document.getElementById("eurt").innerHTML=starEd(s.r);
 }
 function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
   img.onload=()=>{const m=1024,sc=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
@@ -906,10 +919,9 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
     const rb=e.target.closest(".erb");if(rb){const m=essen.meals.find(x=>String(x.id)===rb.dataset.id);if(!m)return;
       essen.rate={id:m.id,wer:m.wer||"beide",s:{...(m.sterne||{})}};renderEssen();return}
     if(essen.rate&&e.target.closest(".ered")){const r=essen.rate;let b;
-      if(b=e.target.closest("[data-rw]")){r.wer=b.dataset.rw;renderEssen();return}
-      if(b=e.target.closest("[data-sp]")){const p=b.dataset.sp,n=+b.dataset.sn;if(n===0)r.s[p]=r.s[p]===0?undefined:0;else r.s[p]=r.s[p]===n?n-.5:n;if(r.s[p]==null)delete r.s[p];renderEssen();return}
+      if(starClick(r,e)){renderEssen();return}
       if(e.target.closest("[data-rx]")){essen.rate=null;renderEssen();return}
-      if(b=e.target.closest("[data-rsave]")){b.disabled=true;const ps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];const s={};for(const p of ps)if(r.s[p]!=null)s[p]=r.s[p];
+      if(b=e.target.closest("[data-rsave]")){b.disabled=true;const s=starsOf(r);
         const ok=await window.MK_ESSEN.upd({id:r.id,wer:r.wer,sterne:s}).catch(()=>false);
         if(ok){const m=essen.meals.find(x=>x.id===r.id);if(m){m.wer=r.wer;m.sterne=s}essen.rate=null;renderEssen()}
         else{b.disabled=false;const msg=el.querySelector(".ermsg");if(msg)msg.textContent="Speichern hat nicht geklappt."}}
@@ -927,7 +939,7 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
     if(b=e.target.closest("[data-mz]"))s.mahlzeit=b.dataset.mz;
     else if(b=e.target.closest("[data-tag]"))s.tag=+b.dataset.tag;
     else if(b=e.target.closest("[data-dish]"))s.dish=s.dish===b.dataset.dish?"":b.dataset.dish;
-    else if(b=e.target.closest("[data-u]"))s.urteil=s.urteil===b.dataset.u?"":b.dataset.u;
+    else if(starClick(s.r,e)){}
     else if(e.target.closest("#efoto")){document.getElementById("efile").click();return}
     else if(e.target.closest("#erm")){s.foto="";document.getElementById("eprev").hidden=true;document.getElementById("efile").value="";return}
     else return;drawEssenDlg()});
@@ -937,8 +949,12 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
     if(!s.dish&&!text&&!s.foto){info.textContent="Tippe ein Gericht an, schreib kurz, was es gab, oder mach ein Foto.";return}
     const d=dishes.find(x=>x.name===s.dish);
     essen.busy=true;const sb=document.getElementById("esave");sb.disabled=true;info.textContent=s.foto||text?"Gericht wird erkannt …":"wird gespeichert …";
-    try{const meal=await window.MK_ESSEN.add({dish:s.dish,text,foto:s.foto,urteil:s.urteil,mahlzeit:s.mahlzeit,datum:isoDay(s.tag),bekannt:knownDishes().slice(0,80),zutaten:d?d.items.map(i=>i.n):[]});
-      if(!meal)throw 0;essen.meals.unshift({...meal,id:meal.id});essen.meals.sort((a,b)=>String(b.datum+b.at).localeCompare(String(a.datum+a.at)));close();renderEssen()}
+    const st=starsOf(s.r);
+    try{const meal=await window.MK_ESSEN.add({dish:s.dish,text,foto:s.foto,urteil:urtFromStars(st),mahlzeit:s.mahlzeit,datum:isoDay(s.tag),bekannt:knownDishes().slice(0,80),zutaten:d?d.items.map(i=>i.n):[]});
+      if(!meal)throw 0;
+      // Wer gegessen hat und Sterne gleich mitspeichern
+      if(meal.id&&(Object.keys(st).length||s.r.wer!=="beide")){const ok=await window.MK_ESSEN.upd({id:meal.id,wer:s.r.wer,sterne:st}).catch(()=>false);if(ok){meal.wer=s.r.wer;meal.sterne=st}}
+      essen.meals.unshift({...meal,id:meal.id});essen.meals.sort((a,b)=>String(b.datum+b.at).localeCompare(String(a.datum+a.at)));close();renderEssen()}
     catch(err){info.textContent="Speichern hat nicht geklappt, bitte nochmal."}
     essen.busy=false;sb.disabled=false};
 })();
@@ -1027,7 +1043,7 @@ async function saveVorrat(){if(!window.MK_VORRAT)return;
   try{await window.MK_VORRAT.set(vorrat.st)}catch(e){}}
 // Ideen: eure gern gegessenen Gerichte, die das verbrauchen, was bald weg muss
 function ideas(bald){
-  const fav=new Map();for(const m of (essen.meals||[]))if(m.urteil!=="nein"){const o=fav.get(m.name)||{z:normW(m.zutaten),g:0};if(m.urteil==="gern")o.g++;fav.set(m.name,o)}
+  const fav=new Map();for(const m of (essen.meals||[])){const v=mealScore(m);if(noRepeat(m)||(v!=null&&v<2))continue;const o=fav.get(m.name)||{z:normW(m.zutaten),g:0};if(v!=null&&v>=3.5)o.g++;fav.set(m.name,o)}
   for(const d of dishes)if(!fav.has(d.name))fav.set(d.name,{z:normW(d.items.map(i=>i.n).join(" ")),g:0,reste:d.reste?normW(d.reste):""});
   const out=[];for(const [n,o] of fav){const hit=bald.filter(x=>{const nm=normW(x.name);if(o.reste&&/reste|karkasse/.test(nm))return nm.includes(o.reste);const a=normW(x.art||x.name).replace(/n$|en$|e$/,"");return a.length>2&&o.z.includes(a)}).map(x=>x.name);
     if(hit.length)out.push({n,hit,score:hit.length*10+o.g})}
