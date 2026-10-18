@@ -862,12 +862,12 @@ function dayLabel(iso){const t=isoDay(0),y=isoDay(1);if(iso===t)return "Heute";i
 const WER={beide:"Beide",p1:"Person 1",p2:"Person 2"};
 const stTxt=v=>String(v).replace(".",",")+" ★";
 function rateHtml(m){const s=m.sterne||{},wer=m.wer||"";const ps=wer==="p1"?["p1"]:wer==="p2"?["p2"]:["p1","p2"];
-  const sum=ps.filter(p=>s[p]).map(p=>`${WER[p]}: ${stTxt(s[p])}`).join(" · ");
+  const sum=ps.filter(p=>s[p]!=null).map(p=>`${WER[p]}: ${stTxt(s[p])}`).join(" · ");
   const ed=essen.rate&&essen.rate.id===m.id;
   if(!ed)return `<div class="erate">${wer&&wer!=="beide"?`<span class="ewer">nur ${WER[wer]}</span>`:""}${sum?`<span class="est">${esc(sum)}</span>`:""}<button type="button" class="erb" data-id="${esc(m.id)}">${sum||wer?"ändern":"Bewerten"}</button></div>`;
   const r=essen.rate,eps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];
   return `<div class="ered"><div class="erow"><span class="lbl">Gegessen von</span>${Object.keys(WER).map(k=>`<button type="button" class="chip" data-rw="${k}" aria-pressed="${r.wer===k}">${WER[k]}</button>`).join("")}</div>
-    ${eps.map(p=>`<div class="erow"><span class="lbl">${WER[p]}</span><span class="stars">${[1,2,3,4,5].map(n=>{const v=r.s[p]||0;return `<button type="button" class="sb${v>=n?" on":v>=n-.5?" half":""}" data-sp="${p}" data-sn="${n}" aria-label="${n} Sterne">★</button>`}).join("")}</span><small>${r.s[p]?stTxt(r.s[p]):""}</small></div>`).join("")}
+    ${eps.map(p=>`<div class="erow"><span class="lbl">${WER[p]}</span><span class="stars"><button type="button" class="sb0${r.s[p]===0?" on":""}" data-sp="${p}" data-sn="0" aria-label="0 Sterne">0</button>${[1,2,3,4,5].map(n=>{const v=r.s[p]||0;return `<button type="button" class="sb${v>=n?" on":v>=n-.5?" half":""}" data-sp="${p}" data-sn="${n}" aria-label="${n} Sterne">★</button>`}).join("")}</span><small>${r.s[p]!=null?stTxt(r.s[p]):""}</small></div>`).join("")}
     <div class="erow"><button type="button" class="sbtn" data-rsave="1">Speichern</button><button type="button" class="sbtn ghost" data-rx="1">Abbrechen</button><small class="ermsg"></small></div></div>`}
 function renderEssen(){
   const el=document.getElementById("essen");const ms=essen.meals;
@@ -907,9 +907,9 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
       essen.rate={id:m.id,wer:m.wer||"beide",s:{...(m.sterne||{})}};renderEssen();return}
     if(essen.rate&&e.target.closest(".ered")){const r=essen.rate;let b;
       if(b=e.target.closest("[data-rw]")){r.wer=b.dataset.rw;renderEssen();return}
-      if(b=e.target.closest("[data-sp]")){const p=b.dataset.sp,n=+b.dataset.sn;r.s[p]=r.s[p]===n?n-.5:n;if(r.s[p]<.5)delete r.s[p];renderEssen();return}
+      if(b=e.target.closest("[data-sp]")){const p=b.dataset.sp,n=+b.dataset.sn;if(n===0)r.s[p]=r.s[p]===0?undefined:0;else r.s[p]=r.s[p]===n?n-.5:n;if(r.s[p]==null)delete r.s[p];renderEssen();return}
       if(e.target.closest("[data-rx]")){essen.rate=null;renderEssen();return}
-      if(b=e.target.closest("[data-rsave]")){b.disabled=true;const ps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];const s={};for(const p of ps)if(r.s[p])s[p]=r.s[p];
+      if(b=e.target.closest("[data-rsave]")){b.disabled=true;const ps=r.wer==="p1"?["p1"]:r.wer==="p2"?["p2"]:["p1","p2"];const s={};for(const p of ps)if(r.s[p]!=null)s[p]=r.s[p];
         const ok=await window.MK_ESSEN.upd({id:r.id,wer:r.wer,sterne:s}).catch(()=>false);
         if(ok){const m=essen.meals.find(x=>x.id===r.id);if(m){m.wer=r.wer;m.sterne=s}essen.rate=null;renderEssen()}
         else{b.disabled=false;const msg=el.querySelector(".ermsg");if(msg)msg.textContent="Speichern hat nicht geklappt."}}

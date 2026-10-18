@@ -521,3 +521,5 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .stars{display:flex;gap:2px}.sb{border:0;background:none;font-size:24px;line-height:1;padding:2px;cursor:pointer;color:#cfd4c8}
 .sb.on{color:#e0a100}.sb.half{background:linear-gradient(90deg,#e0a100 50%,#cfd4c8 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .sbtn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
+.sb0{border:1px solid var(--line);background:var(--surface);border-radius:6px;font:inherit;font-size:12px;font-weight:700;width:26px;height:26px;margin-right:4px;cursor:pointer;color:var(--muted)}
+.sb0.on{background:#b3261e;border-color:#b3261e;color:#fff}
