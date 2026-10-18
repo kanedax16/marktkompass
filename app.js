@@ -348,7 +348,7 @@ const pxw=(img,r)=>{const o=marks(r);return o?`<span class="pxw">${img}${o}</spa
 // Favoriten (Stern) je Artikel, gemeinsam gespeichert in den Einstellungen
 const isFav=a=>!!a&&Array.isArray(pick.fav)&&pick.fav.includes(a);
 const favStar=a=>isFav(a)?`<span class="fstar" title="Favorit">★</span> `:"";
-function pills(o,img){let h="";if(!img&&isBio(o))h+=`<span class="pill bio">Bio</span>`;if(!img&&isTK(o))h+=`<span class="pill tk">❄ TK</span>`;if(!img&&isLF(o))h+=`<span class="pill lf">L laktosefrei</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
+function pills(o,img){let h="";if(!img&&isBio(o))h+=`<span class="pill bio">Bio</span>`;if(!img&&isTK(o))h+=`<span class="pill tk">❄ TK</span>`;if(!img&&isLF(o))h+=`<span class="pill lf">L laktosefrei</span>`;if(o.kind==="dauerpreis")h+=`<span class="pill reg">Dauerpreis</span>`;if(o.kind==="normalpreis")h+=`<span class="pill reg">Normalpreis</span>`;if(o.kind==="beworben")h+=`<span class="pill reg">im Prospekt, ohne Rabatt</span>`;if(o.kind==="bonpreis")h+=`<span class="pill bon">Euer Bonpreis</span>`;if(o.loyalty)h+=`<span class="pill app">App-Preis</span>`;if(o.st==="soon"){const f=new Date(o.validFrom),t=o.validTo?new Date(o.validTo):null;h+=`<span class="pill soon">${t&&t-f<36e5*24?"nur":"ab"} ${dfmt(f)}</span>`}return h}
 
 // ===== Einkaufen: gespeicherte Gerichte und Einkaufsliste =====
 const UNITS=["g","kg","Stk","ml","l","Bund","Pck"];
@@ -825,6 +825,8 @@ function applyData(data,fdata){
      rows=out}
     // Artikelname aus deiner Artikelliste (vom n8n-Workflow gesetzt), sonst die eigene Erkennung
     rows.forEach(r=>r.art=r.artKI||article(r));
+    // Nur beworben, ohne Rabatt (kein Streichpreis, nicht günstiger als sonst): kein Angebot, zählt wie ein Normalpreis
+    rows.forEach(r=>{if(r.kind==="angebot"&&offerSave(r)<0.03)r.kind="beworben"});
     rows.forEach(r=>{const d=dispName(r);if(d&&d!==r.product)r.disp=d;if(/\bxxl\b/i.test(r.product)&&!/\bxxl\b/i.test(r.brand))r.brand=(r.brand?r.brand+" ":"")+"XXL"});
     // Apfelschorle ist ein eigener Artikel (bis zum nächsten Lauf noch unter Äpfel einsortiert)
     rows.forEach(r=>{if(/apfel(saft)?-?schorle/i.test(r.product)){r.art="Apfelschorle";r.grp="Getränke"}});
