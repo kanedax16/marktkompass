@@ -939,7 +939,9 @@ function stockItems(){
   const today=isoDay(0),out=[];
   for(const b of (typeof bons!=="undefined"&&bons.list)||[])b.zeilen.forEach((z,i)=>{if(z.typ!=="ware")return;
     const key=b.id+"|"+i;out.push({key,art:z.artikel||"",name:z.artikel||z.name,detail:z.name,menge:z.menge,einheit:z.einheit,datum:b.datum,laden:b.laden,bis:addDays(b.datum,shelfDays(z.artikel,z.name)),ver:z.verarbeitung||""})});
-  for(const x of vorrat.st.extra||[])out.push({key:"x|"+x.id,art:x.art||"",name:x.name,detail:x.tk?"eingefroren":"",datum:x.datum,laden:"",bis:addDays(x.datum,x.tk?90:shelfDays(x.art,x.name)),manual:true,tk:!!x.tk});
+  for(const x of vorrat.st.extra||[])out.push({key:"x|"+x.id,art:x.art||"",name:x.name,detail:"",datum:x.datum,laden:"",bis:addDays(x.datum,x.tk?90:shelfDays(x.art,x.name)),manual:true,tk:!!x.tk,ort0:x.ort||""});
+  const OV=vorrat.st.ort||{};
+  for(const x of out)x.ort=x.tk?"tk":OV[x.key]||x.ort0||(shelfDays(x.art,x.name)>=60?"kammer":"kueche");
   // Gegessenes zieht ab: je Mahlzeit und Zutat das älteste passende Stück
   const used=new Set();
   const meals=((typeof essen!=="undefined"&&essen.meals)||[]).slice().sort((a,b)=>String(a.datum).localeCompare(String(b.datum)));
@@ -952,13 +954,14 @@ function stockItems(){
 }
 function homeNote(n){if(!vorrat.on)return "";const a=normW(n);if(!a)return "";
   const it=stockItems().find(x=>normW(x.art||x.name)===a);return it?` · <span class="home">zu Hause seit ${esc(dShort(it.datum))}</span>`:""}
-async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[],tk:v.tk||{}};
+async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[],tk:v.tk||{},ort:v.ort||{}};
   document.getElementById("vorratbtn").hidden=false;if(lsGet("bpf_view","")==="vorrat")st.view="vorrat";render()}catch(e){}}
 async function saveVorrat(){if(!window.MK_VORRAT)return;
   // Alte Markierungen aufräumen, damit der Zustand klein bleibt
   const lim=isoDay(90);for(const [k,d] of Object.entries(vorrat.st.gone))if(d<lim)delete vorrat.st.gone[k];
   vorrat.st.extra=(vorrat.st.extra||[]).filter(x=>x.tk?!vorrat.st.gone["x|"+x.id]||vorrat.st.gone["x|"+x.id]>=lim:x.datum>=lim);
   const lim2=isoDay(120);for(const [k,d] of Object.entries(vorrat.st.tk||{}))if(d<lim2)delete vorrat.st.tk[k];
+  const keys=new Set(stockItems().map(x=>x.key));for(const k of Object.keys(vorrat.st.ort||{}))if(!keys.has(k))delete vorrat.st.ort[k];
   try{await window.MK_VORRAT.set(vorrat.st)}catch(e){}}
 // Ideen: eure gern gegessenen Gerichte, die das verbrauchen, was bald weg muss
 function ideas(bald){
@@ -982,17 +985,18 @@ function renderVorrat(){
   const all=stockItems();
   const present=artinfo.on?[...new Set(all.flatMap(x=>katsOf(x.art)))].sort((a,b)=>a.localeCompare(b,"de")):[];
   if(!present.includes(vorrat.kat))vorrat.kat="";
-  const sel=vorrat.kat?all.filter(x=>katsOf(x.art).includes(vorrat.kat)):all,tks=sel.filter(x=>x.tk),its=sel.filter(x=>!x.tk),bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
-  const row=x=>`<div class="vi ${x.state}"><img class="px aopen" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt="" data-art="${esc(x.art||x.name)}"><div class="vt"><div class="vn"><span class="aopen" data-art="${esc(x.art||x.name)}">${esc(x.name)}</span>${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.tk?"":x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",x.tk?`eingefroren am ${dShort(x.datum)}`:`seit ${dShort(x.datum)}`,x.tk?(x.state==="alt"?"lieber bald essen":`gut bis ca. ${dShort(x.bis)}`):x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div>${x.tk?"":`<button type="button" class="vtk" data-k="${esc(x.key)}" data-n="${esc(x.name)}" data-a="${esc(x.art||"")}" aria-label="${esc(x.name)} einfrieren" title="Einfrieren">❄</button>`}<button type="button" class="vleer" data-k="${esc(x.key)}">${x.tk?"gegessen":"leer"}</button></div>`;
+  const sel=vorrat.kat?all.filter(x=>katsOf(x.art).includes(vorrat.kat)):all,tks=sel.filter(x=>x.ort==="tk"),kam=sel.filter(x=>x.ort==="kammer"),its=sel.filter(x=>x.ort==="kueche"),bald=its.filter(x=>x.state!=="ok"),rest=its.filter(x=>x.state==="ok");
+  const row=x=>`<div class="vi ${x.state}"><img class="px aopen" src="${icon(x.art||x.name,x.art?grpOf(x.art):null)}" alt="" data-art="${esc(x.art||x.name)}"><div class="vt"><div class="vn"><span class="aopen" data-art="${esc(x.art||x.name)}">${esc(x.name)}</span>${artinfo.on?artBadges(x.art,x.ver):""}</div><div class="vd">${esc([x.tk?"":x.detail&&x.detail!==x.name?x.detail:"",x.laden?sname(x.laden):"",x.tk?`eingefroren am ${dShort(x.datum)}`:`seit ${dShort(x.datum)}`,x.tk?(x.state==="alt"?"lieber bald essen":`gut bis ca. ${dShort(x.bis)}`):x.state==="alt"?"wahrscheinlich drüber":`bis ca. ${dShort(x.bis)}`].filter(Boolean).join(" · "))}</div></div>${x.tk?"":`<button type="button" class="vmv" data-k="${esc(x.key)}" data-o="${x.ort==="kammer"?"kueche":"kammer"}" title="${x.ort==="kammer"?"In Kühlschrank oder Küche":"In die Abstellkammer"}">${x.ort==="kammer"?"→ Küche":"→ Kammer"}</button><button type="button" class="vtk" data-k="${esc(x.key)}" data-n="${esc(x.name)}" data-a="${esc(x.art||"")}" aria-label="${esc(x.name)} einfrieren" title="Einfrieren">❄</button>`}<button type="button" class="vleer" data-k="${esc(x.key)}">${x.tk?"gegessen":"leer"}</button></div>`;
   el.innerHTML=`<div class="ehead"><div><h2>Vorrat</h2><p class="hint">Was zu Hause ist und bald weg muss. Füllt sich aus euren Kassenbons, was ihr im Tagebuch esst, zieht die App ab.</p></div></div>
-  <h3>Zu Hause <small>${its.length?its.length+" Sachen":""}</small></h3>
+  <h3>Zu Hause <small>${sel.length?sel.length+" Sachen":""}</small></h3>
   ${present.length>1?`<div class="vkat">${["",...present].map(k=>`<button type="button" class="chip${vorrat.kat===k?" on":""}" data-kat="${esc(k)}">${esc(k||"Alle")}</button>`).join("")}</div>`:""}
-  ${!its.length?`<p class="hint">${(bons.list||[]).length?"Alles verbraucht, oder noch nichts eingetragen.":"Fotografiert eure Kassenbons im Reiter Einkaufen, dann füllt sich der Vorrat von selbst."} Was ihr esst, zieht die App ab.</p>`:""}
+  ${!sel.length?`<p class="hint">${(bons.list||[]).length?"Alles verbraucht, oder noch nichts eingetragen.":"Fotografiert eure Kassenbons im Reiter Einkaufen, dann füllt sich der Vorrat von selbst."} Was ihr esst, zieht die App ab.</p>`:""}
   ${bald.length?`<div class="vbox bald"><div class="vh">Bald verbrauchen</div>${bald.map(row).join("")}${ideas(bald)}</div>`:""}
-  ${rest.length?`<details class="vbox"><summary class="vh">Noch da <small>${rest.length}</small></summary>${rest.map(row).join("")}</details>`:""}
+  ${rest.length?`<details class="vbox"><summary class="vh">Kühlschrank und Küche <small>${rest.length}</small></summary>${rest.map(row).join("")}</details>`:""}
+  ${kam.length?`<details class="vbox kam"><summary class="vh">Abstellkammer <small>${kam.length}</small></summary>${kam.map(row).join("")}</details>`:""}
   ${tks.length?`<div class="vbox tk"><div class="vh">Tiefkühler <small>${tks.length}</small></div>${tks.map(row).join("")}</div>`:""}
   ${goneHtml()}
-  <form class="vadd" id="vadd"><input id="vnew" list="artlist" placeholder="Etwas ohne Bon ergänzen, z. B. Eier" aria-label="Vorrat ergänzen" autocomplete="off"><button type="submit" aria-label="Hinzufügen">+</button></form>`;
+  <form class="vadd" id="vadd"><input id="vnew" list="artlist" placeholder="Etwas ohne Bon ergänzen, z. B. Eier" aria-label="Vorrat ergänzen" autocomplete="off"><select id="vort" aria-label="Wo"><option value="">Küche</option><option value="kammer">Kammer</option><option value="tk">Tiefkühler</option></select><button type="submit" aria-label="Hinzufügen">+</button></form>`;
 }
 // Einfrieren: ein Stück oder aufgeteilt in Portionen, z. B. Ente in Keulen und Brust
 function tkForm(btn){const vi=btn.closest(".vi");if(vi.nextElementSibling&&vi.nextElementSibling.classList.contains("tkf"))return;
@@ -1004,6 +1008,7 @@ function tkForm(btn){const vi=btn.closest(".vi");if(vi.nextElementSibling&&vi.ne
     const kb=e.target.closest("[data-kat]");if(kb){vorrat.kat=kb.dataset.kat;renderVorrat();return}
     const bk=e.target.closest(".vback");if(bk){delete vorrat.st.gone[bk.dataset.k];vorrat.openGone=true;renderVorrat();saveVorrat();return}
     const t=e.target.closest(".vtk");if(t){tkForm(t);return}
+    const mv=e.target.closest(".vmv");if(mv){vorrat.st.ort=vorrat.st.ort||{};vorrat.st.ort[mv.dataset.k]=mv.dataset.o;renderVorrat();saveVorrat();return}
     const ta=e.target.closest(".tkadd");if(ta){const l=ta.closest(".tkf").querySelector(".tkl");l.insertAdjacentHTML("beforeend",`<input class="tkn" placeholder="weitere Portion">`);l.lastElementChild.focus();return}
     const tx=e.target.closest(".tkx");if(tx){tx.closest(".tkf").remove();return}
     const ts=e.target.closest(".tkgo");if(ts){const f=ts.closest(".tkf");const names=[...f.querySelectorAll(".tkn")].map(i=>i.value.trim()).filter(Boolean);if(!names.length)return;
@@ -1011,7 +1016,7 @@ function tkForm(btn){const vi=btn.closest(".vi");if(vi.nextElementSibling&&vi.ne
       names.forEach((n,j)=>vorrat.st.extra.push({id:Date.now().toString(36)+j,name:n,art:f.dataset.a||"",datum:isoDay(0),tk:true}));renderVorrat();saveVorrat();return}
     const b=e.target.closest(".vleer");if(!b)return;vorrat.st.gone[b.dataset.k]=isoDay(0);vorrat.openGone=true;renderVorrat();saveVorrat()});
   host.addEventListener("submit",e=>{if(e.target.id!=="vadd")return;e.preventDefault();const v=document.getElementById("vnew").value.trim();if(!v)return;
-    const art=typeof artFor==="function"?artFor(v):"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0)});renderVorrat();saveVorrat()});
+    const art=typeof artFor==="function"?artFor(v):"";const o=(document.getElementById("vort")||{}).value||"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0),...(o==="tk"?{tk:true}:o?{ort:o}:{})});renderVorrat();saveVorrat()});
 })();
 initVorrat();
 

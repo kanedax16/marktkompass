@@ -471,3 +471,6 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .tkl{display:flex;flex-direction:column;gap:4px}.tkn{font:inherit;font-size:16px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
 .tkb{display:flex;gap:6px;justify-content:flex-end}.tkb button{font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
 .tkb .tkgo{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.vmv{font:inherit;font-size:11px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:999px;padding:3px 8px;cursor:pointer;margin-right:4px;white-space:nowrap}
+.vbox.kam{border-color:#c9b48a}.vbox.kam .vh{background:#f5efe2;color:#6b5528}
+#vort{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 6px}
