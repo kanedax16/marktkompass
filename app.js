@@ -579,6 +579,9 @@ document.addEventListener("click",e=>{const a=e.target.closest("#amode [data-am]
   if(a.dataset.am){st.amode=a.dataset.am;try{localStorage.setItem("bpf_amode",JSON.stringify(st.amode))}catch(x){}}
   else{st.laden=a.dataset.ld;try{localStorage.setItem("bpf_laden",JSON.stringify(st.laden))}catch(x){}}
   render();window.scrollTo(0,0)});
+// Läden im Prospekt-Reiter sind zugeklappt; aufgeklappte bleiben beim Neuzeichnen offen
+const OPEN_ST=new Set();
+document.addEventListener("toggle",e=>{const d=e.target;if(!d.classList||!d.classList.contains("pstore"))return;d.open?OPEN_ST.add(d.dataset.st):OPEN_ST.delete(d.dataset.st)},true);
 function renderProsp(now){
   const el=document.getElementById("prosp");
   if(!rows.length){el.innerHTML="";return}
@@ -601,7 +604,7 @@ function renderProsp(now){
   el.innerHTML=hier+`<p class="phead">${offers.length} Angebote in ${stores.length} ${stores.length===1?"Laden":"Läden"}${st.grp!=="Alle"?" · "+esc(st.grp):""}, sortiert nach Entfernung ab Lokhalle</p>`+stores.map(k=>{
     const arr=by[k],km=near(k);
     const grps=GROUPS.filter(g=>arr.some(r=>r.grp===g));
-    return`<details class="pstore" open><summary>${logo(k)}<span class="psn">${esc(sname(k))}</span><span class="psm">${arr.length} ${arr.length===1?"Angebot":"Angebote"}${km!=null?" · "+kmTxt(km):""}${until(arr)?" · bis "+until(arr):""}</span></summary>
+    return`<details class="pstore" data-st="${esc(k)}"${stores.length===1||OPEN_ST.has(k)?" open":""}><summary>${logo(k)}<span class="psn">${esc(sname(k))}</span><span class="psm">${arr.length} ${arr.length===1?"Angebot":"Angebote"}${km!=null?" · "+kmTxt(km):""}${until(arr)?" · bis "+until(arr):""}</span><span class="pchev" aria-hidden="true">▾</span></summary>
       ${grps.map(g=>`<h4>${esc(g)}</h4>`+arr.filter(r=>r.grp===g).map(r=>({r,s:offerSave(r)})).sort((a,b)=>b.s-a.s||a.r.refPrice-b.r.refPrice).map(({r,s})=>`
         <div class="prow${oneDay(r)?" oneday":""}">${pxw(`<img class="px aopen" src="${icon(r.art,r.grp)}" alt="" data-art="${esc(r.art||r.product)}">`,r)}
           <div class="pinfo"><div class="pn"><span class="aopen" data-art="${esc(r.art||r.product)}">${favStar(r.art)}${esc(pn(r))}</span>${r.brand?` <span class="meta">${esc(r.brand)}</span>`:""}${pills(r,1)}</div>

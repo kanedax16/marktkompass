@@ -267,6 +267,9 @@ body.gast #pshops{pointer-events:none;opacity:.6}
 .pstore summary .logo{height:22px;max-width:60px;object-fit:contain}
 .pstore .psn{font-weight:700;font-size:15px}
 .pstore .psm{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+.pstore .pchev{font-size:14px;color:var(--muted);transition:transform .15s;flex:none;width:16px;text-align:center}
+.pstore[open] .pchev{transform:rotate(180deg)}
+.pstore:not([open]) summary{border-bottom:0}
 .pstore h4{margin:8px 10px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:0 8px;align-items:center;padding:5px 10px;border-top:1px solid var(--line)}
 .prow:first-of-type{border-top:0}
