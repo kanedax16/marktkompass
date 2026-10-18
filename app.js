@@ -923,7 +923,7 @@ initBons();
 // Vorrat (Web-Version): füllt sich aus den Kassenbons, Gerichte aus dem Tagebuch ziehen ab, "leer" tippen korrigiert.
 // Haltbarkeit ist eine Schätzung je Artikel. Geteilter Zustand (leer markiert, von Hand ergänzt) liegt im Haushalt.
 var vorrat={on:false,st:{gone:{},extra:[]},saving:false,kat:""};
-const SHELF=[[/zuckermais|maiskolben|\bmais\b|zuckerschote/i,5],[/salat|rucola|spinat|kresse|sprossen|kräuter|basilikum|petersilie|schnittlauch|koriander|minze/i,4],[/beere|himbeer|erdbeer|heidelbeer|brombeer|kirsch/i,3],
+const SHELF=[[/reste|karkasse/i,2],[/zuckermais|maiskolben|\bmais\b|zuckerschote/i,5],[/salat|rucola|spinat|kresse|sprossen|kräuter|basilikum|petersilie|schnittlauch|koriander|minze/i,4],[/beere|himbeer|erdbeer|heidelbeer|brombeer|kirsch/i,3],
  [/pilz|champignon|seitling/i,4],[/hack/i,1],[/lachs|fisch|forelle|garnele|dorade|kabeljau|seelachs|muschel|tintenfisch/i,2],[/tiefgek|tk\b|tiefgefr/i,180],
  [/hähnchen|pute|ente|gans|rind|kalb|lamm|steak|fleisch/i,3],[/milch|joghurt|kefir|skyr|quark|sahne|buttermilch/i,10],[/eier/i,21],[/butter/i,30],
  [/käse|parmesan|parmigiano|bergkäse|gouda|feta|mozzarella|burrata|brie/i,14],[/kartoffel|zwiebel|knoblauch|schalotte|kürbis|kohl\b|weißkohl|rotkohl/i,30],
@@ -966,8 +966,8 @@ async function saveVorrat(){if(!window.MK_VORRAT)return;
 // Ideen: eure gern gegessenen Gerichte, die das verbrauchen, was bald weg muss
 function ideas(bald){
   const fav=new Map();for(const m of (essen.meals||[]))if(m.urteil!=="nein"){const o=fav.get(m.name)||{z:normW(m.zutaten),g:0};if(m.urteil==="gern")o.g++;fav.set(m.name,o)}
-  for(const d of dishes)if(!fav.has(d.name))fav.set(d.name,{z:normW(d.items.map(i=>i.n).join(" ")),g:0});
-  const out=[];for(const [n,o] of fav){const hit=bald.filter(x=>{const a=normW(x.art||x.name).replace(/n$|en$|e$/,"");return a.length>2&&o.z.includes(a)}).map(x=>x.name);
+  for(const d of dishes)if(!fav.has(d.name))fav.set(d.name,{z:normW(d.items.map(i=>i.n).join(" ")),g:0,reste:d.reste?normW(d.reste):""});
+  const out=[];for(const [n,o] of fav){const hit=bald.filter(x=>{const nm=normW(x.name);if(o.reste&&/reste|karkasse/.test(nm))return nm.includes(o.reste);const a=normW(x.art||x.name).replace(/n$|en$|e$/,"");return a.length>2&&o.z.includes(a)}).map(x=>x.name);
     if(hit.length)out.push({n,hit,score:hit.length*10+o.g})}
   out.sort((a,b)=>b.score-a.score);
   return out.length?`<div class="videa">Idee: ${out.slice(0,3).map(x=>`<button type="button" class="chip" data-quick="${esc(x.n)}">${esc(x.n)}</button> <small>mit ${esc(x.hit.join(", "))}</small>`).join(" ")}</div>`:"";
@@ -1001,7 +1001,7 @@ function renderVorrat(){
 // Einfrieren: ein Stück oder aufgeteilt in Portionen, z. B. Ente in Keulen und Brust
 const tkLine=(v="")=>`<div class="tkr"><input class="tkn" value="${esc(v)}" placeholder="weitere Portion"><input class="tkc" type="number" min="1" max="20" value="1" aria-label="Anzahl"><span>Stück</span></div>`;
 function tkForm(btn){const vi=btn.closest(".vi");if(vi.nextElementSibling&&vi.nextElementSibling.classList.contains("tkf"))return;
-  vi.insertAdjacentHTML("afterend",`<div class="tkf" data-k="${esc(btn.dataset.k)}" data-a="${esc(btn.dataset.a)}"><div class="lbl">Einfrieren als</div><div class="tkl">${tkLine(btn.dataset.n)}</div>
+  vi.insertAdjacentHTML("afterend",`<div class="tkf" data-k="${esc(btn.dataset.k)}" data-a="${esc(btn.dataset.a)}"><div class="lbl">Einfrieren als</div><div class="tkl">${tkLine(btn.dataset.n)}</div>${/ente|gans|huhn|hähnchen|pute|poularde/i.test(btn.dataset.a||btn.dataset.n)?`<label class="tkrest"><input type="checkbox" class="tkre" checked> Reste (Karkasse) kommen in den Kühlschrank und werden bald verwertet</label>`:""}
     <div class="tkb"><button type="button" class="tkadd">+ Portion</button><button type="button" class="tkx">Abbrechen</button><button type="button" class="tkgo">Einfrieren</button></div></div>`)}
 (function wireVorrat(){
   const host=document.getElementById("vorratv");if(!host)return;
@@ -1014,7 +1014,8 @@ function tkForm(btn){const vi=btn.closest(".vi");if(vi.nextElementSibling&&vi.ne
     const tx=e.target.closest(".tkx");if(tx){tx.closest(".tkf").remove();return}
     const ts=e.target.closest(".tkgo");if(ts){const f=ts.closest(".tkf");const names=[...f.querySelectorAll(".tkr")].map(r=>({n:r.querySelector(".tkn").value.trim(),c:Math.max(1,Math.min(20,parseInt(r.querySelector(".tkc").value)||1))})).filter(x=>x.n);if(!names.length)return;
       vorrat.st.tk=vorrat.st.tk||{};vorrat.st.tk[f.dataset.k]=isoDay(0);
-      names.forEach((x,j)=>vorrat.st.extra.push({id:Date.now().toString(36)+j,name:x.n,art:f.dataset.a||"",datum:isoDay(0),tk:true,...(x.c>1?{n:x.c}:{})}));renderVorrat();saveVorrat();return}
+      names.forEach((x,j)=>vorrat.st.extra.push({id:Date.now().toString(36)+j,name:x.n,art:f.dataset.a||"",datum:isoDay(0),tk:true,...(x.c>1?{n:x.c}:{})}));
+      const re=f.querySelector(".tkre");if(re&&re.checked){const a=f.dataset.a||"Geflügel";vorrat.st.extra.push({id:Date.now().toString(36)+"r",name:(/^ente/i.test(a)?"Enten":/hähnchen|huhn/i.test(a)?"Hähnchen":a)+"reste (Karkasse)",art:a,datum:isoDay(0)})}renderVorrat();saveVorrat();return}
     const b=e.target.closest(".vleer");if(!b)return;
     if(b.dataset.x){const x=vorrat.st.extra.find(y=>y.id===b.dataset.x);if(x&&(x.n||1)>1){x.n--;renderVorrat();saveVorrat();return}}vorrat.st.gone[b.dataset.k]=isoDay(0);vorrat.openGone=true;renderVorrat();saveVorrat()});
   host.addEventListener("submit",e=>{if(e.target.id!=="vadd")return;e.preventDefault();const v=document.getElementById("vnew").value.trim();if(!v)return;
@@ -1180,6 +1181,7 @@ const el=document.getElementById("adlg");
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
     <div class="aed" hidden></div>
+    ${/entenbrust|entenkeule/i.test(art)?`<p class="atip">Tipp: Eine ganze Ente ist pro Kilo etwa ein Drittel günstiger als Brust oder Keulen einzeln. Zerlegen, Teile einfrieren, aus den Resten Knusprige Ente im Pita machen.</p>`:""}
     ${cowCard}
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
     ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist"><tbody>${offs.map(o=>`<tr><td>${logo(o.retailer)} ${esc(sname(o.retailer))}</td><td>${esc(o.product)}${o.kind==="angebot"?' <span class="vb fu">Angebot</span>':""}</td><td class="bp">${eur(o.price)}<small>${eur(o.refPrice)}/${esc(o.unit)}</small></td></tr>`).join("")}</tbody></table>`:""}
