@@ -465,3 +465,9 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .s-H{background:#5d9a3c!important;color:#fff!important}.s-T{background:#a8cf86!important;color:#1b221d!important}.s-L{background:#c9b48a!important;color:#1b221d!important}.s-I{background:#b9d3e6!important;color:#1b221d!important}
 .ssl{display:flex;gap:8px;font-size:11px;color:var(--muted)}.ssl span{padding:0 5px;border-radius:3px}
 .vback{font:inherit;font-size:12px;font-weight:700;border:1px solid var(--best);background:var(--best-soft);color:var(--best);border-radius:999px;padding:3px 10px;cursor:pointer;white-space:nowrap}
+.vtk{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:2px 8px;cursor:pointer;margin-right:4px}
+.vbox.tk{border-color:#9cc9e3}.vbox.tk .vh{background:#e6f2f9;color:#2d5f7f;cursor:default}
+.tkf{padding:8px 10px;border-top:1px dashed var(--line);background:#f2f8fc;display:flex;flex-direction:column;gap:6px}
+.tkl{display:flex;flex-direction:column;gap:4px}.tkn{font:inherit;font-size:16px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.tkb{display:flex;gap:6px;justify-content:flex-end}.tkb button{font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.tkb .tkgo{background:var(--fg);color:var(--bg);border-color:var(--fg)}
