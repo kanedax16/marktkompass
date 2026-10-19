@@ -827,6 +827,8 @@ function applyData(data,fdata){
     // Artikelname aus deiner Artikelliste (vom n8n-Workflow gesetzt), sonst die eigene Erkennung
     rows.forEach(r=>r.art=r.artKI||article(r));
     // Nur beworben, ohne Rabatt (kein Streichpreis, nicht günstiger als sonst): kein Angebot, zählt wie ein Normalpreis
+    // Marke vor dem Namen (kaufland.de: "K-PURLAND|Hähnchen-Minutenschnitzel") abtrennen
+    rows.forEach(r=>{if(/[|\u2028]/.test(r.product||"")){const p=String(r.product).split(/[|\u2028]/);if(!r.brand)r.brand=p[0].trim();r.product=p.slice(1).join(" ").trim()||p[0].trim()}});
     rows.forEach(r=>{if(r.kind==="angebot"&&offerSave(r)<0.03)r.kind="beworben"});
     rows.forEach(r=>{const d=dispName(r);if(d&&d!==r.product)r.disp=d;if(/\bxxl\b/i.test(r.product)&&!/\bxxl\b/i.test(r.brand))r.brand=(r.brand?r.brand+" ":"")+"XXL"});
     // Apfelschorle ist ein eigener Artikel (bis zum nächsten Lauf noch unter Äpfel einsortiert)
