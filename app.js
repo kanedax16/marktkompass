@@ -239,7 +239,7 @@ function render(){
       const nOffers=arr.filter(o=>o.kind==="angebot"&&o.st!=="soon").length;
       const d=document.createElement("details");d.className="item";d.open=!!st.q;
       d.innerHTML=`<summary>
-        <img class="px aopen" src="${icon(cat,g)}" alt="" data-art="${esc(cat)}">
+        ${pxw(`<img class="px aopen" src="${icon(cat,g)}" alt="" data-art="${esc(cat)}">`,best||{})}
         <div class="itxt"><div class="iname"><span class="aopen" data-art="${esc(cat)}">${esc(cat)}</span>${nOffers?`<span class="obadge" title="${nOffers} ${nOffers===1?"Angebot":"Angebote"} gerade">% ${nOffers}</span>`:""}</div></div>
         <button type="button" class="addb" data-art="${esc(cat)}" data-u="${esc(unit)}" aria-label="${esc(cat)} auf die Einkaufsliste" title="Auf die Einkaufsliste">+</button>
         <div class="tag${units.length>1?" multi":""}"><div class="u">ab</div>${units.slice(0,2).map(u=>`<div class="p">${eur(bestOf(u).refPrice).replace(" €","")}</div><div class="u">${esc(uTxt(u))}</div>`).join("")}</div>
@@ -344,6 +344,8 @@ const pn=r=>r.disp||r.product;
 // Tiefgekühlt erkennen; Bio und Tiefkühl erscheinen als kleine Zeichen direkt auf dem Bild
 const isTK=r=>/tiefk(ü|ue)hl|tiefgek(ü|ue)hlt|\btk\b|❄|gefroren|frost/i.test(`${r.product||""} ${r.category||""} ${r.art||""}`);
 const isLF=r=>/laktosefrei|lactosefrei|ohne laktose/i.test(`${r.product||""} ${r.brand||""} ${r.description||""} ${r.art||""}`);
+// Bio, Tiefkühl und Laktosefrei gelten überall gleich: auf dem Bild als Zeichen, ohne Bild als kleine Schilder
+const marksPill=r=>(isBio(r)?` <span class="pill bio">Bio</span>`:"")+(isTK(r)?` <span class="pill tk">❄ TK</span>`:"")+(isLF(r)?` <span class="pill lf">L laktosefrei</span>`:"");
 const marks=r=>(isBio(r)?`<span class="ov ob" title="Bio">BIO</span>`:"")+(isTK(r)?`<span class="ov ot" title="Tiefgekühlt">❄</span>`:"")+(isLF(r)?`<span class="ov ol" title="Laktosefrei">L</span>`:"");
 const pxw=(img,r)=>{const o=marks(r);return o?`<span class="pxw">${img}${o}</span>`:img};
 // Favoriten (Stern) je Artikel, gemeinsam gespeichert in den Einstellungen
@@ -488,9 +490,9 @@ function renderShop(){
     const sub=arr.reduce((s,e)=>s+(e.cost||0),0);total+=sub;const open=arr.filter(e=>!e.done).length;
     return `<div class="lg"><div class="lh">${k==="_"?`<strong>Ohne Preis</strong>`:`${logo(k)}<strong>${esc(sname(k))}</strong>`}<span>${open} offen${k!=="_"?` · ca. ${eur(sub)}`:""}</span></div>
     ${arr.map(e=>{const o=e.best&&e.best.o;return `<label class="li${e.done?" done":""}" data-key="${esc(e.key)}">
-      <input type="checkbox" ${e.done?"checked":""}><img class="px aopen" src="${icon(e.art||e.name,e.art?grpOf(e.art):null)}" alt="" data-art="${esc(e.art||e.name)}">
+      <input type="checkbox" ${e.done?"checked":""}>${pxw(`<img class="px aopen" src="${icon(e.art||e.name,e.art?grpOf(e.art):null)}" alt="" data-art="${esc(e.art||e.name)}">`,o||{product:e.name,art:e.art})}
       <span class="lt"><span class="ln"><b>${qtyTxt(e.fam,e.base,e.unit)}</b> <span class="aopen" data-art="${esc(e.art||e.name)}">${esc(e.name)}</span></span>
-      <span class="lo">${o?`${esc(pn(o))} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}${homeNote(e.art||e.name)}</span></span>
+      <span class="lo">${o?`${esc(pn(o))} · ${eur(o.price)} (${eur(o.refPrice)}/${esc(o.unit)})${e.best.n>1?` · ${e.best.n} Preise`:""}${pills(o,1)}`:"kein Preis gefunden"}${e.src.size?` · für ${esc([...e.src].join(", "))}`:""}${homeNote(e.art||e.name)}</span></span>
       ${e.cost!=null?`<span class="lc">${eur(e.cost)}</span>`:""}${e.extra?`<button type="button" class="ibtn" data-act="del" aria-label="${esc(e.name)} entfernen">×</button>`:""}</label>`}).join("")}</div>`}).join("");
   document.getElementById("ltotal").textContent=total?`ca. ${eur(total)} zu den günstigsten Preisen`:"";
 }
@@ -1013,7 +1015,7 @@ function drawBons(){
   el.innerHTML=bons.list.map(b=>{const ware=b.zeilen.filter(z=>z.typ==="ware");const zu=ware.filter(z=>z.artikel).length;
     const [Y,M,D]=String(b.datum).split("-");
     return `<details class="bon"><summary>${logo(b.laden)}<span class="bmeta"><strong>${esc(sname(b.laden))}</strong> ${esc(D+"."+M+"."+Y)}${b.filiale?` <small>${esc(b.filiale)}</small>`:""}</span><span class="bsum">${eur(b.summe)}</span><small class="bcnt">${ware.length} Artikel, ${zu} zugeordnet</small></summary>
-    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div${z.artikel?` class="aopen" data-art="${esc(z.artikel)}"`:""}>${esc(z.name||z.text)}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
+    <table class="bz"><tbody>${b.zeilen.map(z=>`<tr class="${z.typ!=="ware"?"bx":""}"><td><div${z.artikel?` class="aopen" data-art="${esc(z.artikel)}"`:""}>${esc(z.typ==="ware"?cleanName(z.name||z.text):(z.name||z.text))}${z.typ==="ware"?marksPill({product:(z.name||"")+" "+(z.text||""),art:z.artikel}):""}</div>${z.typ==="ware"&&z.id?(z.artikel?`<button type="button" class="part bset" data-b="${esc(b.id)}" data-z="${esc(z.id)}" title="Artikel ändern">${esc(z.artikel)}</button>`:`<button type="button" class="bset bnone" data-b="${esc(b.id)}" data-z="${esc(z.id)}">+ Artikel zuordnen</button>`):(z.artikel?`<span class="part">${esc(z.artikel)}</span>`:"")}${artinfo.on&&z.typ==="ware"?artBadges(z.artikel,z.verarbeitung):""}${z.rabatt?` <small class="brab">−${eur(z.rabatt)} Rabatt</small>`:""}</td><td class="bm">${esc(fmtMenge(z.menge,z.einheit))}</td><td class="bp">${eur(z.preis)}${z.einheit!=="Stk"&&z.grundpreis?`<small>${eur(z.grundpreis)}/${z.einheit}</small>`:""}</td></tr>`).join("")}</tbody></table>
     <div class="bfoot"><button type="button" class="bdel" data-id="${esc(b.id)}">Bon löschen</button></div></details>`}).join("");
 }
 function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);
@@ -1286,8 +1288,8 @@ function openArt(art,editing){
   const per={};for(const r of offs0){const k=r.retailer;const o=per[k]=per[k]||{retailer:k,unit:r.unit};
     if(r.kind==="angebot"){if(!o.off||r.refPrice<o.off.refPrice)o.off=r}else if(!o.reg||r.refPrice<o.reg.refPrice)o.reg=r}
   const offs=Object.values(per).map(o=>{const off=o.off,reg=o.reg;
-    if(off&&(!reg||off.refPrice<reg.refPrice)){const st0=reg?reg.refPrice:off.oldPrice&&off.price>0?off.oldPrice*off.refPrice/off.price:null;return {retailer:o.retailer,unit:off.unit,p:off.refPrice,strike:st0&&st0>off.refPrice?st0:null}}
-    return {retailer:o.retailer,unit:reg.unit,p:reg.refPrice,strike:null}}).sort((a,b)=>a.p-b.p).slice(0,8);
+    if(off&&(!reg||off.refPrice<reg.refPrice)){const st0=reg?reg.refPrice:off.oldPrice&&off.price>0?off.oldPrice*off.refPrice/off.price:null;return {retailer:o.retailer,unit:off.unit,p:off.refPrice,strike:st0&&st0>off.refPrice?st0:null,r:off}}
+    return {retailer:o.retailer,unit:reg.unit,p:reg.refPrice,strike:null,r:reg}}).sort((a,b)=>a.p-b.p).slice(0,8);
   const buys=[];for(const b of bons.list||[])for(const z of b.zeilen)if(z.artikel===art&&z.typ==="ware")buys.push({...z,laden:b.laden,datum:b.datum});
   buys.sort((a,b)=>String(b.datum).localeCompare(String(a.datum)));
   const last=buys[0],v=(last&&last.verarbeitung)||i.ver||"";
@@ -1308,7 +1310,7 @@ const el=document.getElementById("adlg");
     ${last?`<div class="meta">${esc([sname(last.laden),dd(last.datum),fmtMenge(last.menge,last.einheit),eur(last.preis)].filter(Boolean).join(" · "))}</div>`:""}
     ${p.length?`<div class="crumbs">${p.map((x,j)=>`<span class="chip${j===p.length-1?" last":""}">${esc(x)}</span>`).join('<span class="pfs">›</span>')}<button type="button" class="aedit">ändern</button></div>`:`<p class="hint">Noch keine Einordnung. <button type="button" class="aedit">Jetzt festlegen</button></p>`}
     <div class="aed" hidden></div>
-    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist apr"><tbody>${offs.map((o,j)=>`<tr${j===0?' class="best"':""}><td>${LOGOS[o.retailer]?`<img class="logo" src="${LOGOS[o.retailer]}" alt="${esc(sname(o.retailer))}" title="${esc(sname(o.retailer))}">`:esc(sname(o.retailer))}</td><td class="bp">${o.strike?`<s>${eur(o.strike)}</s> `:""}<b${o.strike?' class="ang"':""}>${eur(o.p)}</b>${o.unit!=="Stk"?`<small>je ${esc(UNIT[o.unit]||o.unit)}</small>`:""}</td></tr>`).join("")}</tbody></table>`:`<p class="hint">Gerade kein Preis in euren Läden.</p>`}
+    ${offs.length?`<div class="lbl">Aktuell günstigste Preise</div><table class="ahist apr"><tbody>${offs.map((o,j)=>`<tr${j===0?' class="best"':""}><td>${LOGOS[o.retailer]?`<img class="logo" src="${LOGOS[o.retailer]}" alt="${esc(sname(o.retailer))}" title="${esc(sname(o.retailer))}">`:esc(sname(o.retailer))}</td><td class="bp">${o.strike?`<s>${eur(o.strike)}</s> `:""}<b${o.strike?' class="ang"':""}>${eur(o.p)}</b>${o.unit!=="Stk"?`<small>je ${esc(UNIT[o.unit]||o.unit)}</small>`:""}${o.r?marksPill(o.r):""}</td></tr>`).join("")}</tbody></table>`:`<p class="hint">Gerade kein Preis in euren Läden.</p>`}
     ${/entenbrust|entenkeule/i.test(art)?`<p class="atip">Spartipp: Eine ganze Ente ist etwa 30 % günstiger pro Kilo Fleisch als Brust oder Keulen einzeln, Karkasse und Fett gibt es gratis. Zerlegen, Teile einfrieren, aus den Resten Knusprige Ente im Pita machen. Mehr im Reiter Sparen.</p>`:""}
     ${i.kat&&i.kat.length?`<div class="akat">${i.kat.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>`:""}
 `;
