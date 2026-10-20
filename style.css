@@ -539,3 +539,10 @@ table.ahist .logo{height:14px;vertical-align:-2px}
 .pill.lf{background:#efe3f8;color:#6a2fa0;font-weight:700}
 .pill.tk{background:#dbeefc;color:#1c6fb5;font-weight:700}
 [hidden]{display:none!important}
+/* Abfrage nach dem Essen: was ist aus dem Vorrat weg */
+#vzlist{display:flex;flex-direction:column;gap:6px}
+.vzr{display:flex!important;flex-direction:row!important;align-items:center;gap:10px!important;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-transform:none!important;letter-spacing:0!important;font-size:15px!important;font-weight:400!important;color:var(--fg)!important}
+.vzr input[type=checkbox]{width:20px;height:20px;flex:none}
+.vzn{flex:1;min-width:0}
+.vzq{color:var(--muted);font-size:13px;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.vzm{width:56px;font:inherit;font-size:16px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}

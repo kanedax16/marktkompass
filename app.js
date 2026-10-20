@@ -996,7 +996,7 @@ function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image();
       if(!meal)throw 0;
       // Wer gegessen hat und Sterne gleich mitspeichern
       if(meal.id&&(Object.keys(st).length||s.r.wer!=="beide")){const ok=await window.MK_ESSEN.upd({id:meal.id,wer:s.r.wer,sterne:st}).catch(()=>false);if(ok){meal.wer=s.r.wer;meal.sterne=st}}
-      essen.meals.unshift({...meal,id:meal.id});essen.meals.sort((a,b)=>String(b.datum+b.at).localeCompare(String(a.datum+a.at)));close();renderEssen()}
+      essen.meals.unshift({...meal,id:meal.id});essen.meals.sort((a,b)=>String(b.datum+b.at).localeCompare(String(a.datum+a.at)));close();renderEssen();try{if(typeof askVorrat==="function")askVorrat(meal)}catch(e2){}}
     catch(err){info.textContent="Speichern hat nicht geklappt, bitte nochmal."}
     essen.busy=false;sb.disabled=false};
 })();
@@ -1066,7 +1066,9 @@ function stockItems(){
   // Gegessenes zieht ab: je Mahlzeit und Zutat das älteste passende Stück
   const used=new Set();
   const meals=((typeof essen!=="undefined"&&essen.meals)||[]).slice().sort((a,b)=>String(a.datum).localeCompare(String(b.datum)));
-  for(const m of meals){const zs=String(m.zutaten||"").split(",").map(normW).filter(Boolean);
+  // Mahlzeiten, die über das Abfrage-Fenster schon bestätigt wurden, ziehen hier nichts mehr ab
+  const DONE=vorrat.st.done||{};
+  for(const m of meals){if(m.id&&DONE[m.id])continue;const zs=String(m.zutaten||"").split(",").map(normW).filter(Boolean);
     for(const z of zs){const it=out.filter(x=>!used.has(x.key)&&x.datum<=m.datum&&(x.art||x.name)&&!x.tk&&!(vorrat.st.tk||{})[x.key]&&!(x.einheit==="kg"&&x.menge>=0.5)&&!(x.einheit==="l"&&x.menge>=1)&&true).sort((a,b)=>String(a.datum).localeCompare(String(b.datum)))
       .find(x=>{const a=normW(x.art||x.name);return a&&(a.includes(z)||z.includes(a.replace(/n$|en$|e$/,"")))});if(it){it.n=(it.n||1)-1;if(it.n<=0)used.add(it.key)}}}
   return out.filter(x=>!used.has(x.key)&&!vorrat.st.gone[x.key]&&!(vorrat.st.tk||{})[x.key]&&(x.tk||addDays(x.bis,7)>=today))
@@ -1075,13 +1077,14 @@ function stockItems(){
 }
 function homeNote(n){if(!vorrat.on)return "";const a=normW(n);if(!a)return "";
   const it=stockItems().find(x=>normW(x.art||x.name)===a);return it?` · <span class="home">zu Hause seit ${esc(dShort(it.datum))}</span>`:""}
-async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[],tk:v.tk||{},ort:v.ort||{},minus:v.minus||{}};
+async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[],tk:v.tk||{},ort:v.ort||{},minus:v.minus||{},done:v.done||{}};
   document.getElementById("vorratbtn").hidden=false;document.getElementById("sparbtn").hidden=false;const lv=lsGet("bpf_view","");if(lv==="vorrat"||lv==="spar")st.view=lv;render()}catch(e){}}
 async function saveVorrat(){if(!window.MK_VORRAT)return;
   // Alte Markierungen aufräumen, damit der Zustand klein bleibt
   const lim=isoDay(90);for(const [k,d] of Object.entries(vorrat.st.gone))if(d<lim)delete vorrat.st.gone[k];
   vorrat.st.extra=(vorrat.st.extra||[]).filter(x=>x.tk?!vorrat.st.gone["x|"+x.id]||vorrat.st.gone["x|"+x.id]>=lim:x.datum>=lim);
   const lim2=isoDay(120);for(const [k,d] of Object.entries(vorrat.st.tk||{}))if(d<lim2)delete vorrat.st.tk[k];
+  for(const [k,d] of Object.entries(vorrat.st.done||{}))if(d<lim2)delete vorrat.st.done[k];
   const keys=new Set(stockItems().map(x=>x.key));for(const k of Object.keys(vorrat.st.ort||{}))if(!keys.has(k))delete vorrat.st.ort[k];
   try{await window.MK_VORRAT.set(vorrat.st)}catch(e){}}
 // Ideen: eure gern gegessenen Gerichte, die das verbrauchen, was bald weg muss
@@ -1144,6 +1147,44 @@ function tkForm(btn){const vi=btn.closest(".vi");if(vi.nextElementSibling&&vi.ne
     const art=typeof artFor==="function"?artFor(v):"";const o=(document.getElementById("vort")||{}).value||"";vorrat.st.extra.push({id:Date.now().toString(36),name:art||v,art:art||"",datum:isoDay(0),...(o==="tk"?{tk:true}:o?{ort:o}:{})});renderVorrat();saveVorrat()});
 })();
 initVorrat();
+
+// Nach dem Eintragen einer Mahlzeit: fragen, was aus dem Vorrat weg ist.
+// Zutaten, die nicht im Vorrat stehen (z. B. frisch gekauft ohne Bon), werden einfach übersprungen.
+var vzug={meal:null,items:[]};
+function mealTakeQty(meal,x){
+  // Menge aus dem gespeicherten Gericht, wenn es eins ist (z. B. 6 Eier beim Rührei)
+  const d=dishes.find(y=>y.name===meal.name);const a=normW(x.art||x.name).replace(/n$|en$|e$/,"");
+  const it=d&&(d.items||[]).find(i=>{const n=normW(i.n);return n&&(n.includes(a)||a.includes(n.replace(/n$|en$|e$/,"")))});
+  if(it&&it.u==="Stk"&&+it.q>0)return Math.round(+it.q);return 1}
+function askVorrat(meal){
+  if(!vorrat.on||!meal||!meal.id)return;
+  vorrat.st.done=vorrat.st.done||{};vorrat.st.done[meal.id]=isoDay(0);
+  const zs=String(meal.zutaten||"").split(",").map(normW).filter(Boolean);
+  const stock=stockItems(),used=new Set(),out=[];
+  for(const z of zs){const x=stock.filter(x=>!used.has(x.key)&&(x.art||x.name)).sort((a,b)=>(a.tk?1:0)-(b.tk?1:0)||String(a.datum).localeCompare(String(b.datum)))
+      .find(x=>{const a=normW(x.art||x.name);return a&&(a.includes(z)||z.includes(a.replace(/n$|en$|e$/,"")))});
+    if(!x)continue;used.add(x.key);
+    const big=(x.einheit==="kg"&&x.menge>=0.5)||(x.einheit==="l"&&x.menge>=1);
+    out.push({x,cnt:(x.n||1)>1,q:Math.min(x.n||1,mealTakeQty(meal,x)),on:!big})}
+  if(!out.length){saveVorrat();return}
+  vzug={meal,items:out};
+  document.getElementById("vzhint").textContent=`Für „${meal.name}“. Haken weg, wenn etwas noch da ist.`;
+  document.getElementById("vzlist").innerHTML=out.map((o,i)=>{const x=o.x;
+    return `<label class="vzr"><input type="checkbox" class="vzc" data-i="${i}"${o.on?" checked":""}><span class="vzn">${esc(x.name)}${x.tk?" <small>(Tiefkühler)</small>":""}</span>${o.cnt?`<span class="vzq"><input type="number" class="vzm" data-i="${i}" min="1" max="${x.n}" value="${o.q}" aria-label="Anzahl"> von ${x.n}</span>`:`<span class="vzq">${(x.einheit==="kg"&&x.menge>=0.5)||(x.einheit==="l"&&x.menge>=1)?"ganz leer?":"leer"}</span>`}</label>`}).join("");
+  document.getElementById("vzovl").hidden=false}
+(function wireVorratZug(){
+  const ovl=document.getElementById("vzovl"),dlg=document.getElementById("vzdlg");if(!ovl)return;
+  const close=()=>{ovl.hidden=true;saveVorrat();if(st.view==="vorrat")renderVorrat()};
+  document.getElementById("vzno").onclick=close;
+  dlg.onsubmit=e=>{e.preventDefault();const today=isoDay(0);
+    vzug.items.forEach((o,i)=>{const c=dlg.querySelector(`.vzc[data-i="${i}"]`);if(!c||!c.checked)return;const x=o.x;
+      if(o.cnt){const m=dlg.querySelector(`.vzm[data-i="${i}"]`);const q=Math.max(1,Math.min(x.n,parseInt(m&&m.value)||1));
+        if(q>=x.n){vorrat.st.gone[x.key]=today;return}
+        if(x.xid){const y=vorrat.st.extra.find(e=>e.id===x.xid);if(y){y.n=(y.n||1)-q;return}}
+        const mm=vorrat.st.minus||(vorrat.st.minus={});mm[x.key]=(mm[x.key]||0)+q}
+      else vorrat.st.gone[x.key]=today});
+    close()};
+})();
 
 // Artikel-Infos (nur Besitzer): mehrere Kategorien je Artikel, für wen, übliche Verarbeitung
 var artinfo={on:false,map:{}};
