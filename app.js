@@ -797,7 +797,8 @@ async function load(fresh){
     else if(c==="not_in_manifest"||c==="approval_required"||c==="consent_required")showMsg("<strong>Die Seite braucht deine Freigabe für n8n.</strong> Sie liest nur die Tabellen „Frischeangebote 79106“ und „Filialen 79106“.",false,{label:"Zugriff erlauben und laden",onClick:()=>load(true)});
     else if(e&&e.retryable&&!retried){retried=true;showMsg("n8n antwortet gerade nicht, neuer Versuch läuft.",false);setTimeout(()=>load(false),(e.retryAfterMs||1500)+Math.random()*1000)}
     else if(c==="tool_error")showMsg(`<strong>n8n hat einen Fehler gemeldet.</strong> ${esc(e.message||"")}`,true,{label:"Erneut laden",onClick:()=>load(true)});
-    else showMsg(`<strong>Laden fehlgeschlagen.</strong> ${esc(c||"")}`,true,{label:"Erneut laden",onClick:()=>load(true)});
+    else{const st=String((e&&e.stack)||"").split("\n").slice(0,2).join(" | ").slice(0,220);
+      showMsg(`<strong>Laden fehlgeschlagen.</strong> ${esc(c||"")} <small class="errdetail">${esc(String((e&&e.message)||e||""))}${st?" · "+esc(st):""}</small>`,true,{label:"Erneut laden",onClick:()=>load(true)})}
     document.getElementById("stamp").textContent="Nicht geladen";
   }
 }
