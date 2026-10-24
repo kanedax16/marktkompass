@@ -16,14 +16,14 @@
 <title>Marktkompass</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=202610240720">
+<link rel="stylesheet" href="style.css?v=202610240750">
 </head>
 <body>
 
 <div class="wrap">
   <header class="top">
     <h1>Marktkompass <span class="kw" id="kw">79106</span></h1>
-    <nav class="views" role="tablist" aria-label="Bereich wählen"><button type="button" role="tab" data-v="deals">Angebote</button><button type="button" role="tab" data-v="prosp">Prospekte</button><button type="button" role="tab" data-v="shop">Einkaufen <span id="ccount" hidden></span></button></nav>
+    <nav class="views" role="tablist" aria-label="Bereich wählen"><button type="button" role="tab" data-v="deals">Angebote</button><button type="button" role="tab" data-v="prosp">Prospekte</button><button type="button" role="tab" data-v="shop">Einkaufen <span id="ccount" hidden></span></button><button type="button" role="tab" data-v="vorrat" id="vorratbtn" hidden>Vorrat</button><button type="button" role="tab" data-v="essen" id="essenbtn" hidden>Essen</button></nav>
     <div class="hright">
       <div class="stamp" id="stamp">Angebote werden geladen</div>
       <button type="button" class="mbtn" id="fbbtn" hidden aria-label="Feedback zur App" title="Feedback zur App">
@@ -37,7 +37,7 @@
     </div>
     <div class="menu" id="menu" hidden>
       <h3 id="mvh" hidden>Bereiche</h3>
-      <div class="mviews" id="mviews"><button type="button" data-v="vorrat" id="vorratbtn" hidden>Vorrat</button><button type="button" data-v="essen" id="essenbtn" hidden>Essen</button><button type="button" data-v="spar" id="sparbtn" hidden>Sparen</button><button type="button" data-v="saison" hidden>Saison</button><button type="button" data-v="pruef" id="pruefbtn" hidden>Prüfen <span id="pcount" hidden></span></button></div>
+      <div class="mviews" id="mviews"><button type="button" data-v="spar" id="sparbtn" hidden>Sparen</button><button type="button" data-v="saison" hidden>Saison</button><button type="button" data-v="pruef" id="pruefbtn" hidden>Prüfen <span id="pcount" hidden></span></button></div>
       <h3>Läden <span><button type="button" id="sall">alle an</button><button type="button" id="snone">alle aus</button></span></h3>
       <div class="slist" id="stores"></div>
       <h3>Bio-Läden: nur Lieblingsprodukte</h3>
@@ -137,9 +137,9 @@
   </footer>
 </div>
 
-<script src="web.js?v=202610240720"></script>
-<script src="artnr.js?v=202610240720"></script><script src="app.js?v=202610240720"></script><script src="spar.js?v=202610240720"></script>
-<script src="saison.js?v=202610240720"></script>
+<script src="web.js?v=202610240750"></script>
+<script src="artnr.js?v=202610240750"></script><script src="app.js?v=202610240750"></script><script src="spar.js?v=202610240750"></script>
+<script src="saison.js?v=202610240750"></script>
 <script>load(false);</script>
 
 </body>
