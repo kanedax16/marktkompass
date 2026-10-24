@@ -1076,7 +1076,7 @@ function stockItems(){
     .map(x=>({...x,state:x.bis<today?"alt":x.bis<=addDays(today,2)?"bald":"ok"}))
     .sort((a,b)=>String(a.bis).localeCompare(String(b.bis)));
 }
-function homeNote(n){if(!vorrat.on)return "";const a=normW(n);if(!a)return "";
+function homeNote(n){if(typeof vorrat==="undefined"||!vorrat||!vorrat.on)return "";const a=normW(n);if(!a)return "";
   const it=stockItems().find(x=>normW(x.art||x.name)===a);return it?` · <span class="home">zu Hause seit ${esc(dShort(it.datum))}</span>`:""}
 async function initVorrat(){const V=window.MK_VORRAT;if(!V)return;try{const v=await V.get();vorrat.on=true;if(v&&typeof v==="object")vorrat.st={gone:v.gone||{},extra:v.extra||[],tk:v.tk||{},ort:v.ort||{},minus:v.minus||{},done:v.done||{}};
   document.getElementById("vorratbtn").hidden=false;document.getElementById("sparbtn").hidden=false;const lv=lsGet("bpf_view","");if(lv==="vorrat"||lv==="spar")st.view=lv;render()}catch(e){}}
