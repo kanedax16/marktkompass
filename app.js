@@ -4,7 +4,7 @@ const SERVER="n8n", TOOL="get_data_table_rows";
 const GROUPS=["Obst","Gemüse","Fleisch","Fisch","Milch & Eier","Käse","Nüsse & Hülsenfrüchte","Feinkost","Getreide & Flocken","Saaten & Öle","Vorrat","Getränke","Haushalt"];
 const QUICK=["Suppengrün","Kartoffeln","Äpfel","Bananen","Hähnchen","Hackfleisch","Lachs","Eier","Kefir","Joghurt","Mandeln","Linsen"];
 const SHORT={"Netto Marken-Discount":"Netto","Hieber's Frische Center":"Hieber","dm-drogerie markt":"dm"};
-const LOGOS={"ALDI SÜD":"img/logo-aldi-sued.png", "Lidl":"img/logo-lidl.png", "REWE":"img/logo-rewe.png", "nahkauf":"img/logo-nahkauf.png", "EDEKA":"img/logo-edeka.png", "PENNY":"img/logo-penny.png", "Netto Marken-Discount":"img/logo-netto-marken-discount.png", "Kaufland":"img/logo-kaufland.png", "Hieber's Frische Center":"img/logo-hieber-s-frische-center.png", "denn's Biomarkt":"img/logo-denn-s-biomarkt.png", "Alnatura":"img/logo-alnatura.png"};
+const LOGOS={"ALDI SÜD":"img/logo-aldi-sued.png", "Lidl":"img/logo-lidl.png", "REWE":"img/logo-rewe.png", "nahkauf":"img/logo-nahkauf.png", "EDEKA":"img/logo-edeka.png", "PENNY":"img/logo-penny.png", "Netto Marken-Discount":"img/logo-netto-marken-discount.png", "Kaufland":"img/logo-kaufland.png", "Hieber's Frische Center":"img/logo-hieber-s-frische-center.png", "denn's Biomarkt":"img/logo-denn-s-biomarkt.png", "Alnatura":"img/logo-alnatura.png", "dm-drogerie markt":"img/logo-dm.png", "dm":"img/logo-dm.png"};
 const sname=r=>SHORT[r]||r;
 const logo=r=>LOGOS[r]?`<img class="logo" src="${LOGOS[r]}" alt="${esc(sname(r))}" title="${esc(sname(r))}">`:`<strong>${esc(sname(r))}</strong>`;
 const eur=n=>n==null?"":n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
@@ -446,9 +446,9 @@ function dishCost(d,portions){let s=0,miss=0;d.items.forEach(i=>{const art=artFo
   const c=b?costOf(b.o,fam,(+i.q||0)*f*(portions/(d.portions||1))):null;c==null?miss++:s+=c});return {s,miss}}
 
 // Ansicht wechseln
-const views=document.querySelectorAll(".views button");
+const views=document.querySelectorAll(".views button, .mviews button");
 st.view=lsGet("bpf_view","deals");
-views.forEach(b=>b.onclick=()=>{st.view=b.dataset.v;lsSet("bpf_view",st.view);render();window.scrollTo(0,0)});
+views.forEach(b=>b.onclick=()=>{setMenu(false);st.view=b.dataset.v;lsSet("bpf_view",st.view);render();window.scrollTo(0,0)});
 function applyView(){
   if(st.view==="pruef"&&!(typeof pruef!=="undefined"&&pruef&&pruef.on))st.view="deals";
   if(st.view==="essen"&&!(typeof essen!=="undefined"&&essen&&essen.on))st.view="deals";
@@ -457,7 +457,7 @@ function applyView(){
   if(merged()&&st.view==="prosp"){st.view="deals";st.amode="laden"}
   const spa=st.view==="spar";const pb=document.querySelector('.views [data-v="prosp"]');if(pb)pb.hidden=merged();
   const shop=st.view==="shop",sai=st.view==="saison",pro=isProsp(),pru=st.view==="pruef",ess=st.view==="essen",vor=st.view==="vorrat",deals=!shop&&!sai&&!pro&&!pru&&!ess&&!vor&&!spa&&st.view==="deals";
-  views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));
+  views.forEach(b=>b.setAttribute("aria-selected",b.dataset.v===st.view));{const mv=document.getElementById("mviews");const any=!!mv&&[...mv.children].some(b=>!b.hidden);document.getElementById("mvh").hidden=!any;mv.hidden=!any}
   document.querySelector(".panel").hidden=!(deals||pro);document.getElementById("list").hidden=!deals;document.getElementById("prosp").hidden=!pro;document.getElementById("shop").hidden=!shop;document.getElementById("saison").hidden=!sai;document.getElementById("pruef").hidden=!pru;document.getElementById("essen").hidden=!ess;document.getElementById("vorratv").hidden=!vor;document.getElementById("sparv").hidden=!spa;
   const open=buildList().filter(e=>!e.done).length;const cc=document.getElementById("ccount");cc.textContent=open||"";cc.hidden=!open;
 }
