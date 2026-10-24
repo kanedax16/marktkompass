@@ -1034,6 +1034,15 @@ function shrinkBon(file){return new Promise((res,rej)=>{const img=new Image();co
       else info.textContent=r&&r.msg==="nicht lesbar"?"Der Bon war nicht lesbar. Versuch ein schärferes Foto, gerade von oben und mit gutem Licht.":"Das hat nicht geklappt, bitte nochmal."}
     catch(err){info.textContent="Das hat nicht geklappt, bitte nochmal."}
     bons.busy=false;btn.disabled=false};
+  const gi=document.getElementById("ginfo"),gdef=gi?gi.textContent:"";let gbusy=false;
+  if(document.getElementById("gnew"))document.getElementById("gnew").onclick=()=>{if(!gbusy)document.getElementById("gfile").click()};
+  if(document.getElementById("gfile"))document.getElementById("gfile").onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f||gbusy)return;
+    gbusy=true;const btn=document.getElementById("gnew");btn.disabled=true;gi.textContent="Angebote werden gelesen, das dauert bis zu einer halben Minute …";
+    try{const foto=await shrinkBon(f);const r=await window.MK_BON.prospekt(foto,"GO ASIA");
+      if(r&&r.ok){const [Y,M,D]=String(r.bis||"").split("-");gi.textContent=`${r.n} Angebote von GO ASIA gelesen${D?`, gültig bis ${D}.${M}.`:""}. Sie stehen jetzt unter Angebote. Noch ein Foto? Einfach nochmal tippen.`;try{load(true)}catch(x){}}
+      else gi.textContent=r&&r.msg==="nicht lesbar"?"Auf dem Foto waren keine Preise lesbar. Versuch es schärfer oder mit einem Screenshot der Angebotsseite.":"Das hat nicht geklappt, bitte nochmal."}
+    catch(err){gi.textContent="Das hat nicht geklappt, bitte nochmal."}
+    gbusy=false;btn.disabled=false};
   sec.addEventListener("click",async e=>{const b=e.target.closest(".bdel");if(!b)return;
     if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="Wirklich löschen?";setTimeout(()=>{b.dataset.arm="";b.textContent="Bon löschen"},3000);return}
     const id=+b.dataset.id;b.disabled=true;const ok=await window.MK_BON.del(id).catch(()=>false);

@@ -109,6 +109,7 @@
   window.MK_BON={
     get:async()=>{const d=await fetchData();return d&&d.role==="owner"?(d.bons||[]):null},
     add:async foto=>post({t:"bon",foto}),
+    prospekt:async(foto,laden)=>post({t:"prospekt",foto,laden}),
     del:async id=>{const r=await post({t:"bon_del",id});return !!(r&&r.ok)},
     assign:async o=>{const r=await post({t:"bonzeile",...o});return !!(r&&r.ok)}
   };
