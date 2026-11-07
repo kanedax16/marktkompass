@@ -408,7 +408,7 @@ goneInfo();
 const saveCart=syncedDoc("einkauf",()=>cart,v=>{if(v&&typeof v==="object")cart=Object.assign({dishes:[],extra:[],done:[]},thaw(v))},"haushalt");
 
 function artFor(n){
-  const t=clean(n).trim();if(ARTNAMES.has(t)||rows.some(r=>r.art===t))return t;
+  const t=clean(n).trim();if(/kl[öo]ße|knödel/i.test(t))return null;if(ARTNAMES.has(t)||rows.some(r=>r.art===t))return t;
   const l=t.toLowerCase();if(!l)return null;
   const [a,b]=AGRP["Fisch"];for(const [nm,re] of ARTICLES.slice(a,b))if(re.test(l))return nm;
   for(const [nm,re] of ARTICLES)if(re.test(l))return nm;
@@ -466,7 +466,8 @@ function applyView(){
 // Einkaufsliste und Gerichte zeichnen
 const shopEl=document.getElementById("shop");
 function renderShop(){
-  const now=new Date();shopRows=rows.filter(r=>baseOk(r,now));
+  const now=new Date();const fixL=new Set([...(cart.extra||[]).map(x=>x.l),...Object.values(cart.laden||{})].filter(Boolean));
+  shopRows=rows.filter(r=>baseOk(r,now)||(fixL.has(r.retailer)&&status(r,now)!=="exp"&&r.refPrice!=null&&gone[r.offerId]===undefined));
   // Gerichte
   const dg=document.getElementById("dgrid");{const dc=document.getElementById("dcount");if(dc)dc.textContent=dishes.length?`(${dishes.length})`:""}
   if(!dishes.length)dg.innerHTML=`<div class="empty">Noch keine Gerichte gespeichert. Leg mit „Neues Gericht“ dein erstes an.</div>`;
