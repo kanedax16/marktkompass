@@ -418,8 +418,8 @@ const grpOf=art=>{const r=rows.find(x=>x.art===art);if(r)return r.grp;for(const 
 function baseOk(r,now){const s=status(r,now);if(s==="exp")return false;if(s==="soon"&&!st.soon)return false;
   if(!st.app&&r.loyalty)return false;if(st.off.has(r.retailer))return false;if(!pickOk(r))return false;if(gone[r.offerId]!==undefined)return false;if(st.bio&&!isBio(r))return false;if(st.mine&&fils.length&&!shops(r).length)return false;return r.refPrice!=null}
 let shopRows=[];
-function bestFor(art,fam){
-  if(!art)return null;const c=shopRows.filter(r=>r.art===art);if(!c.length)return null;
+function bestFor(art,fam,laden){
+  if(!art)return null;let c=shopRows.filter(r=>r.art===art);if(laden){const h=c.filter(r=>r.retailer===laden);if(h.length)c=h}if(!c.length)return null;
   const want={m:"kg",v:"l",c:"Stk"}[fam];const m=c.filter(r=>r.unit===want);const pool=(m.length?m:c).slice().sort((a,b)=>a.refPrice-b.refPrice);
   return {o:pool[0],n:c.length};
 }
@@ -434,13 +434,13 @@ function qtyTxt(fam,base,unit){
 }
 function buildList(){
   const map=new Map();
-  const add=(n,q,u,src,extra)=>{const art=artFor(n);const [fam,f]=FAM[u]||["p",1];const key=(art||clean(n).trim().toLowerCase())+"|"+fam;
+  const add=(n,q,u,src,extra,l)=>{const art=artFor(n);const [fam,f]=FAM[u]||["p",1];const key=(art||clean(n).trim().toLowerCase())+"|"+fam;
     let e=map.get(key);if(!e){e={key,name:art||clean(n).trim(),art,fam,base:0,unit:u,src:new Set(),extra:false};map.set(key,e)}
-    e.base+=(+q||0)*f;if(src)e.src.add(src);if(extra)e.extra=true};
+    e.base+=(+q||0)*f;if(src)e.src.add(src);if(extra)e.extra=true;if(l&&!e.laden)e.laden=l};
   cart.dishes.forEach(cd=>{const d=dishes.find(x=>x.id===cd.id);if(!d)return;const k=cd.portions/(d.portions||1);d.items.forEach(i=>add(i.n,(+i.q||0)*k,i.u,d.name,false))});
-  cart.extra.forEach(x=>add(x.n,x.q,x.u,null,true));
+  cart.extra.forEach(x=>add(x.n,x.q,x.u,null,true,x.l));
   const items=[...map.values()];
-  items.forEach(e=>{e.best=bestFor(e.art,e.fam);e.cost=e.best?costOf(e.best.o,e.fam,e.base):null;e.done=cart.done.includes(e.key)});
+  items.forEach(e=>{if(cart.laden&&cart.laden[e.key])e.laden=cart.laden[e.key];e.best=bestFor(e.art,e.fam,e.laden);e.cost=e.best?costOf(e.best.o,e.fam,e.base):null;e.done=cart.done.includes(e.key)});
   return items;
 }
 function dishCost(d,portions){let s=0,miss=0;d.items.forEach(i=>{const art=artFor(i.n);const [fam,f]=FAM[i.u]||["p",1];const b=bestFor(art,fam);
@@ -468,7 +468,7 @@ const shopEl=document.getElementById("shop");
 function renderShop(){
   const now=new Date();shopRows=rows.filter(r=>baseOk(r,now));
   // Gerichte
-  const dg=document.getElementById("dgrid");
+  const dg=document.getElementById("dgrid");{const dc=document.getElementById("dcount");if(dc)dc.textContent=dishes.length?`(${dishes.length})`:""}
   if(!dishes.length)dg.innerHTML=`<div class="empty">Noch keine Gerichte gespeichert. Leg mit „Neues Gericht“ dein erstes an.</div>`;
   else dg.innerHTML=dishes.map(d=>{const inC=cart.dishes.find(x=>x.id===d.id);const p=inC?inC.portions:d.portions||2;const c=dishCost(d,p);
     const first=artFor((d.items[0]||{}).n||"");
@@ -484,8 +484,8 @@ function renderShop(){
   // Liste nach Laden
   const items=buildList();const lg=document.getElementById("lgroups");
   if(!items.length){lg.innerHTML=`<div class="empty">Die Liste ist leer. Füge ein Gericht hinzu oder tippe oben einen Artikel ein.</div>`;document.getElementById("ltotal").textContent="";return}
-  const groups={};items.forEach(e=>{const k=e.best?e.best.o.retailer:"_";(groups[k]=groups[k]||[]).push(e)});
-  const keys=Object.keys(groups).sort((a,b)=>a==="_"?1:b==="_"?-1:groups[b].length-groups[a].length);
+  const groups={};items.forEach(e=>{const k=e.laden||(e.best?e.best.o.retailer:"_");(groups[k]=groups[k]||[]).push(e)});
+  const keys=Object.keys(groups).sort((a,b)=>a==="_"?1:b==="_"?-1:groups[b].length-groups[a].length);const L=cart.lorder||[];keys.sort((a,b)=>{const ia=L.indexOf(a),ib=L.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)});
   let total=0;
   lg.innerHTML=keys.map(k=>{const arr=groups[k].sort((a,b)=>a.done-b.done||a.name.localeCompare(b.name,"de"));
     const sub=arr.reduce((s,e)=>s+(e.cost||0),0);total+=sub;const open=arr.filter(e=>!e.done).length;
@@ -520,14 +520,14 @@ document.getElementById("addrow").onsubmit=e=>{e.preventDefault();const n=docume
 let clearArm=null;
 document.getElementById("lclear").onclick=e=>{const b=e.currentTarget;
   if(!clearArm){b.textContent="Wirklich leeren?";b.classList.add("warn");clearArm=setTimeout(()=>{clearArm=null;b.textContent="Liste leeren";b.classList.remove("warn")},3000);return}
-  clearTimeout(clearArm);clearArm=null;b.textContent="Liste leeren";b.classList.remove("warn");cart={dishes:[],extra:[],done:[]};saveCart();render()};
+  clearTimeout(clearArm);clearArm=null;b.textContent="Liste leeren";b.classList.remove("warn");cart={dishes:[],extra:[],done:[],laden:{},lorder:[]};saveCart();render()};
 document.getElementById("ldone").onclick=()=>{const items=buildList();const doneKeys=new Set(items.filter(i=>i.done).map(i=>i.key));
   cart.extra=cart.extra.filter(x=>{const art=artFor(x.n);return !doneKeys.has((art||clean(x.n).trim().toLowerCase())+"|"+(FAM[x.u]||["p"])[0])});
   cart.dishes=cart.dishes.filter(cd=>{const d=dishes.find(x=>x.id===cd.id);if(!d)return false;
     return d.items.some(i=>{const art=artFor(i.n);return !doneKeys.has((art||clean(i.n).trim().toLowerCase())+"|"+(FAM[i.u]||["p"])[0])})});
   cart.done=cart.done.filter(k=>buildList().some(i=>i.key===k));saveCart();render()};
 document.getElementById("lcopy").onclick=async e=>{const b=e.currentTarget;const items=buildList().filter(i=>!i.done);const g={};
-  items.forEach(i=>{const k=i.best?sname(i.best.o.retailer):"Sonstiges";(g[k]=g[k]||[]).push(`- ${qtyTxt(i.fam,i.base,i.unit)} ${i.name}`)});
+  items.forEach(i=>{const k=i.laden?sname(i.laden):i.best?sname(i.best.o.retailer):"Sonstiges";(g[k]=g[k]||[]).push(`- ${qtyTxt(i.fam,i.base,i.unit)} ${i.name}`)});
   const txt=Object.entries(g).map(([k,v])=>k+"\n"+v.join("\n")).join("\n\n");
   let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(err){}
   if(!ok){const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();try{ok=document.execCommand("copy")}catch(err){}t.remove()}

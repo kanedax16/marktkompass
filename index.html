@@ -16,7 +16,7 @@
 <title>Marktkompass</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=202610240830">
+<link rel="stylesheet" href="style.css?v=202611071200">
 </head>
 <body>
 
@@ -68,10 +68,11 @@
 
   <div id="msg" hidden></div>
   <div id="shop" class="shop" hidden>
-    <section>
-      <h2>Gerichte <button type="button" class="sbtn" id="dnew">+ Neues Gericht</button></h2>
-      <div class="dgrid" id="dgrid"></div>
-    </section>
+    <details class="dfold">
+      <summary>Gerichte <small id="dcount"></small></summary>
+      <div class="dfoldin"><button type="button" class="sbtn" id="dnew">+ Neues Gericht</button>
+      <div class="dgrid" id="dgrid"></div></div>
+    </details>
     <section>
       <h2>Einkaufsliste <small id="ltotal"></small></h2>
       <div class="incart" id="incart"></div>
@@ -137,9 +138,9 @@
   </footer>
 </div>
 
-<script src="web.js?v=202610240830"></script>
-<script src="artnr.js?v=202610240830"></script><script src="app.js?v=202610240830"></script><script src="spar.js?v=202610240830"></script>
-<script src="saison.js?v=202610240830"></script>
+<script src="web.js?v=202611071200"></script>
+<script src="artnr.js?v=202611071200"></script><script src="app.js?v=202611071200"></script><script src="spar.js?v=202611071200"></script>
+<script src="saison.js?v=202611071200"></script>
 <script>load(false);</script>
 
 </body>
